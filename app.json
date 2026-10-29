@@ -1,0 +1,35 @@
+{
+  "name": "Luna",
+  "displayName": "Luna - Paiement Mobile",
+  "description": "Application de paiement mobile, messagerie, appels et épargne tout-en-un",
+  "version": "1.0.0",
+  "versionCode": 1,
+  "packageName": "com.luna.app",
+  "orientation": "portrait",
+  "icon": "./assets/icon.png",
+  "splash": {
+    "image": "./assets/splash.png",
+    "backgroundColor": "#6366f1"
+  },
+  "platforms": ["android"],
+  "android": {
+    "package": "com.luna.app",
+    "versionCode": 1,
+    "permissions": [
+      "INTERNET",
+      "CAMERA",
+      "USE_BIOMETRIC",
+      "USE_FINGERPRINT",
+      "ACCESS_NETWORK_STATE",
+      "WRITE_EXTERNAL_STORAGE",
+      "READ_EXTERNAL_STORAGE",
+      "VIBRATE"
+    ],
+    "adaptiveIcon": {
+      "foregroundImage": "./assets/adaptive-icon.png",
+      "backgroundColor": "#6366f1"
+    }
+  },
+  "primaryColor": "#6366f1",
+  "backgroundColor": "#f5f3ff"
+}
