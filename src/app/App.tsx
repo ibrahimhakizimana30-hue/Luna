@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ThemePicker } from './components/ThemePicker';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { SyncQueue } from './components/SyncQueue';
 import { TransactionsTab } from './components/TransactionsTab';
@@ -370,7 +371,7 @@ export default function App() {
   }
 
   return (
-    <div className="size-full bg-gradient-to-br from-purple-100 via-blue-50 to-pink-100 overflow-auto">
+    <div className="size-full bg-gradient-to-br from-violet-50 via-purple-50 to-blue-50 overflow-auto">
       {/* Ruban aux couleurs du drapeau du Congo */}
       <div className="luna-ribbon" />
       {showTutorial && <Tutorial onClose={handleCloseTutorial} />}
@@ -393,7 +394,10 @@ export default function App() {
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Luna 🌙</h1>
+            <div className="flex items-center gap-1">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Luna</h1>
+              <ThemePicker />
+            </div>
             <p className="text-purple-700">Échanges, messages et appels</p>
           </div>
           <div className="flex items-center gap-2">

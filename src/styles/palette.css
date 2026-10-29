@@ -1,17 +1,16 @@
-/* Palette de Luna : les 3 couleurs du drapeau du Congo
-   (les mêmes que l'écran d'ouverture).
+/* Thèmes de Luna, choisis en appuyant sur la lune de l'accueil :
+     - « Blanc »  : l'apparence d'origine (violet et bleu sur fond clair)
+     - « Noir »   : fond sombre, plus doux pour les yeux la nuit
+     - « Congo »  : les 3 couleurs du drapeau, comme l'écran d'ouverture
 
-   L'application utilisait des classes Tailwind violettes, bleues et roses.
-   Plutôt que de modifier des centaines de classes, on redéfinit ici ces
-   palettes :
-     - violet / indigo  →  VERT du drapeau   (#009543)
-     - bleu / cyan / ciel → JAUNE doré du drapeau (#fbde4a, plus foncé pour le texte)
-     - rose / fuchsia   →  ROUGE du drapeau  (#dc241f)
-   Les couleurs « de signal » (vert succès, rouge erreur, orange alerte)
-   restent inchangées. */
+   L'application utilise des classes Tailwind (bg-purple-50, text-gray-900…).
+   Chaque thème redéfinit les couleurs de ces classes, sans toucher aux écrans.
+   Le thème actif est indiqué par l'attribut data-luna-theme sur <html>. */
 
-@theme {
-  /* Vert du Congo */
+/* ------------------------------------------------------------------ */
+/* Congo : violet → vert, bleu → jaune doré, rose → rouge              */
+/* ------------------------------------------------------------------ */
+html[data-luna-theme='congo'] {
   --color-purple-50: #ecfdf3;
   --color-purple-100: #d1fae0;
   --color-purple-200: #a7f0c4;
@@ -34,21 +33,14 @@
   --color-violet-700: #007a37;
   --color-violet-800: #06602e;
   --color-violet-900: #064e27;
-  --color-violet-950: #022c15;
 
   --color-indigo-50: #ecfdf3;
   --color-indigo-100: #d1fae0;
-  --color-indigo-200: #a7f0c4;
-  --color-indigo-300: #6ddf9c;
-  --color-indigo-400: #2fc46f;
   --color-indigo-500: #0aa651;
   --color-indigo-600: #007a37;
   --color-indigo-700: #06602e;
-  --color-indigo-800: #064e27;
   --color-indigo-900: #043a1d;
-  --color-indigo-950: #022c15;
 
-  /* Jaune doré du Congo (tons foncés pour rester lisibles sur fond blanc) */
   --color-blue-50: #fffbea;
   --color-blue-100: #fff3c4;
   --color-blue-200: #ffe78a;
@@ -59,44 +51,155 @@
   --color-blue-700: #7d5e05;
   --color-blue-800: #644b0a;
   --color-blue-900: #4f3c0d;
-  --color-blue-950: #2e2203;
 
   --color-cyan-50: #fffbea;
-  --color-cyan-100: #fff3c4;
-  --color-cyan-200: #ffe78a;
-  --color-cyan-300: #fbde4a;
-  --color-cyan-400: #f2c925;
-  --color-cyan-500: #b8860b;
   --color-cyan-600: #9c7604;
-  --color-cyan-700: #7d5e05;
-  --color-cyan-800: #644b0a;
-  --color-cyan-900: #4f3c0d;
 
-  --color-sky-50: #fffbea;
-  --color-sky-100: #fff3c4;
-  --color-sky-500: #b8860b;
-  --color-sky-600: #9c7604;
-
-  /* Rouge du Congo */
   --color-pink-50: #fef2f2;
   --color-pink-100: #fee2e2;
-  --color-pink-200: #fecaca;
-  --color-pink-300: #fca5a5;
-  --color-pink-400: #f26b67;
   --color-pink-500: #e23b36;
   --color-pink-600: #dc241f;
-  --color-pink-700: #b91c1c;
-  --color-pink-800: #991b1b;
-  --color-pink-900: #7f1d1d;
-  --color-pink-950: #450a0a;
 
-  --color-fuchsia-500: #e23b36;
-  --color-fuchsia-600: #dc241f;
+  --background: #f4faf5;
+  --foreground: #0f2a1b;
+  --card-foreground: #0f2a1b;
+  --popover-foreground: #0f2a1b;
+  --primary: #009543;
+  --secondary: #9c7604;
+  --muted: #d1fae0;
+  --muted-foreground: #06602e;
+  --accent: #fff3c4;
+  --accent-foreground: #4f3c0d;
+  --border: rgba(0, 149, 67, 0.2);
+  --input-background: #f4faf5;
+  --switch-background: #a7f0c4;
+  --ring: #009543;
 }
 
-/* Ruban aux couleurs du drapeau, réutilisable en haut des écrans */
+/* Ruban aux couleurs du drapeau : visible seulement avec le thème Congo */
 .luna-ribbon {
+  display: none;
   height: 4px;
   width: 100%;
   background: linear-gradient(90deg, #009543 0 33.3%, #fbde4a 33.3% 66.6%, #dc241f 66.6% 100%);
+}
+html[data-luna-theme='congo'] .luna-ribbon {
+  display: block;
+}
+
+/* ------------------------------------------------------------------ */
+/* Noir : les tons clairs deviennent sombres et les textes foncés      */
+/* deviennent clairs. Les couleurs vives (boutons) restent les mêmes.  */
+/* ------------------------------------------------------------------ */
+html[data-luna-theme='noir'] {
+  color-scheme: dark;
+  background: #0d0f14;
+
+  --color-gray-50: #181b22;
+  --color-gray-100: #1f232b;
+  --color-gray-200: #2a2f39;
+  --color-gray-300: #3a404c;
+  --color-gray-400: #7c8494;
+  --color-gray-500: #9aa1ae;
+  --color-gray-600: #b3b9c4;
+  --color-gray-700: #c9ced6;
+  --color-gray-800: #e0e3e8;
+  --color-gray-900: #f1f3f6;
+}
+
+/* Familles de couleurs : tons clairs → teintes sombres, tons foncés → teintes claires */
+html[data-luna-theme='noir'] {
+  --color-purple-50: #1d1830;
+  --color-purple-100: #271f42;
+  --color-purple-200: #3a2d63;
+  --color-purple-300: #54418c;
+  --color-purple-700: #c4b5fd;
+  --color-purple-800: #ddd6fe;
+  --color-purple-900: #ede9fe;
+
+  --color-violet-50: #1d1830;
+  --color-violet-100: #271f42;
+
+  --color-indigo-700: #c7d2fe;
+  --color-indigo-900: #e0e7ff;
+
+  --color-blue-50: #14203a;
+  --color-blue-100: #1a2a4d;
+  --color-blue-200: #253c6b;
+  --color-blue-300: #33528f;
+  --color-blue-700: #93c5fd;
+  --color-blue-800: #bfdbfe;
+  --color-blue-900: #dbeafe;
+
+  --color-cyan-50: #0f2a30;
+
+  --color-pink-50: #2d1522;
+  --color-pink-100: #3d1a2d;
+
+  --color-green-50: #10251a;
+  --color-green-100: #143020;
+  --color-green-200: #1d4a30;
+  --color-green-300: #86efac;
+  --color-green-700: #86efac;
+  --color-green-800: #bbf7d0;
+  --color-green-900: #dcfce7;
+
+  --color-emerald-50: #0f2620;
+
+  --color-red-50: #2d1416;
+  --color-red-100: #3d1a1d;
+  --color-red-200: #5c2328;
+  --color-red-300: #fca5a5;
+  --color-red-700: #fca5a5;
+  --color-red-800: #fecaca;
+  --color-red-900: #fee2e2;
+
+  --color-orange-50: #2d1c10;
+  --color-orange-100: #3d2614;
+  --color-orange-200: #5c3a1c;
+  --color-orange-700: #fdba74;
+  --color-orange-800: #fed7aa;
+  --color-orange-900: #ffedd5;
+
+  --color-amber-50: #2b2110;
+  --color-amber-200: #5c4515;
+  --color-amber-800: #fde68a;
+
+  --color-yellow-50: #2b2610;
+
+  /* Jetons des composants (boutons, champs, fenêtres) */
+  --background: #0d0f14;
+  --foreground: #f1f3f6;
+  --card: #161a22;
+  --card-foreground: #f1f3f6;
+  --popover: #161a22;
+  --popover-foreground: #f1f3f6;
+  --muted: #1f232b;
+  --muted-foreground: #b3b9c4;
+  --accent: #271f42;
+  --accent-foreground: #ede9fe;
+  --border: rgba(255, 255, 255, 0.12);
+  --input-background: #1f232b;
+  --switch-background: #3a404c;
+}
+
+/* Les cartes blanches deviennent gris très foncé (les voiles blancs
+   translucides, comme bg-white/20, restent inchangés) */
+html[data-luna-theme='noir'] .bg-white {
+  background-color: #161a22;
+}
+html[data-luna-theme='noir'] body {
+  color: #f1f3f6;
+}
+
+/* Écrans d'inscription et de code PIN : leur fond était déjà sombre,
+   on le garde sombre au lieu de l'inverser */
+html[data-luna-theme='noir'] .from-purple-900 {
+  --tw-gradient-from: #0d0f14;
+}
+html[data-luna-theme='noir'] .via-blue-900 {
+  --tw-gradient-via: #15122a;
+}
+html[data-luna-theme='noir'] .to-indigo-900 {
+  --tw-gradient-to: #0d0f14;
 }

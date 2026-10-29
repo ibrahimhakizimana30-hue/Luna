@@ -4,6 +4,10 @@ import App from './app/App';
 import { InstallPrompt } from './app/components/InstallPrompt';
 import { SplashScreen } from './app/components/SplashScreen';
 import './styles/index.css';
+import { applyTheme, getTheme } from './app/theme';
+
+// Applique le thème choisi (Blanc, Noir ou Congo) avant le premier affichage
+applyTheme(getTheme());
 
 // L'écran d'ouverture s'affiche à chaque lancement de Luna (une fois par session)
 const SPLASH_SEEN_KEY = 'luna_splash_seen';
