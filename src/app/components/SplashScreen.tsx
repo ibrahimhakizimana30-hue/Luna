@@ -5,14 +5,6 @@ import '../../styles/splash.css';
 export const SPLASH_DURATION_MS = 3000;
 const FADE_OUT_MS = 500;
 
-// Étoiles placées une fois pour toutes (position en %, taille en px, délai en s)
-const STARS = [
-  [12, 18, 2, 0.1], [82, 12, 3, 0.6], [68, 28, 2, 1.2], [22, 72, 3, 0.4],
-  [88, 64, 2, 0.9], [45, 10, 2, 1.5], [8, 46, 2, 0.7], [92, 38, 3, 0.2],
-  [30, 88, 2, 1.1], [74, 84, 3, 0.5], [55, 92, 2, 1.7], [16, 32, 3, 1.3],
-  [62, 6, 2, 0.3], [38, 24, 2, 1.9], [80, 48, 2, 1.4], [5, 86, 3, 0.8],
-];
-
 function Moon() {
   return (
     <svg className="luna-moon" viewBox="0 0 132 132" aria-hidden="true">
@@ -32,7 +24,7 @@ function Moon() {
   );
 }
 
-// Écran d'ouverture animé : lune, étoiles, nom, slogan et barre de chargement
+// Écran d'ouverture « Fierté du Congo » : drapeau, lune dorée, nom, slogan et barre de chargement
 export function SplashScreen({ onDone }: { onDone: () => void }) {
   const [leaving, setLeaving] = useState(false);
 
@@ -51,24 +43,22 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
       role="status"
       aria-label="Chargement de Luna"
     >
-      {STARS.map(([left, top, size, delay], i) => (
-        <span
-          key={i}
-          className="luna-star"
-          style={{ left: `${left}%`, top: `${top}%`, width: size, height: size, animationDelay: `${delay}s` }}
-        />
-      ))}
+      {/* Couleurs du drapeau du Congo, puis voile pour faire ressortir la lune */}
+      <div className="luna-flag" />
+      <div className="luna-veil" />
 
-      <div className="relative flex items-center justify-center">
-        <div className="luna-halo" />
-        <Moon />
-      </div>
+      <div className="luna-content">
+        <div className="relative flex items-center justify-center">
+          <div className="luna-halo" />
+          <Moon />
+        </div>
 
-      <h1 className="luna-title">Luna</h1>
-      <p className="luna-tagline">Votre argent, en toute sérénité</p>
+        <h1 className="luna-title">Luna</h1>
+        <p className="luna-tagline">Votre argent, en toute sécurité</p>
 
-      <div className="luna-progress">
-        <div className="luna-progress-bar" />
+        <div className="luna-progress">
+          <div className="luna-progress-bar" />
+        </div>
       </div>
 
       <p className="luna-footer">Paiements · Messages · Épargne</p>
