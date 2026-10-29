@@ -15,7 +15,7 @@ const FEATURES = [
   { icon: Smartphone, text: 'Paiements, messages et appels r\u00e9unis' },
   { icon: PiggyBank, text: 'Épargnez chaque semaine, sans effort' },
   { icon: Fingerprint, text: 'Code PIN et empreinte digitale' },
-  { icon: ShieldCheck, text: 'Votre argent, en toute sécurité' },
+  { icon: ShieldCheck, text: 'Vos données protégées' },
 ];
 
 function Moon() {
