@@ -1,5 +1,6 @@
 -- Imitation minimale de l'environnement Supabase
 do $$ begin create role anon nologin; exception when duplicate_object then null; end $$; do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$;
+do $$ begin create role supabase_auth_admin nologin; exception when duplicate_object then null; end $$;
 create schema auth; create schema extensions; create schema storage;
 grant usage on schema public, auth, extensions to anon, authenticated;
 create table auth.users (id uuid primary key default gen_random_uuid(), email text, phone text);

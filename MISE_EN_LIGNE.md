@@ -1,7 +1,7 @@
 # 🚀 Mettre Luna en ligne (version test réelle)
 
 Ce guide branche Luna sur un vrai serveur (Supabase) et la publie sur internet.
-Comptes 30 à 45 minutes. Aucune compétence en programmation n'est nécessaire.
+Il reste 2 étapes : environ 15 minutes. Aucune compétence en programmation n'est nécessaire.
 
 > ⚠️ **Version test** : chaque nouveau compte reçoit **50 000 FCFA fictifs** pour
 > essayer les transferts entre utilisateurs Luna. Aucun argent réel ne circule.
@@ -27,22 +27,14 @@ Comptes 30 à 45 minutes. Aucune compétence en programmation n'est nécessaire.
 
 ---
 
-## Étape 1 — Créer le projet Supabase (gratuit)
+## ✅ Étapes 1 et 2 — Projet Supabase et base de données (faites)
 
-1. Allez sur **https://supabase.com** et créez un compte.
-2. Cliquez sur **New project**.
-3. Donnez-lui un nom (ex. `luna`), choisissez un **mot de passe de base de données**
-   (notez-le en lieu sûr) et la région **West EU (Paris)** ou la plus proche.
-4. Attendez 1 à 2 minutes que le projet soit prêt.
+Le projet Supabase **Luna** (région Irlande, plan gratuit) est créé et la base de
+données est installée (fichiers `supabase/migrations/0001` à `0003`). Les règles
+de sécurité ont été vérifiées sur le projet réel.
 
-## Étape 2 — Créer la base de données
-
-1. Dans le menu de gauche, ouvrez **SQL Editor**.
-2. Cliquez sur **New query**.
-3. Ouvrez le fichier [`supabase/migrations/0001_luna_init.sql`](supabase/migrations/0001_luna_init.sql)
-   sur GitHub, copiez **tout** son contenu, collez-le dans l'éditeur, puis cliquez sur **Run**.
-   Le message « Success. No rows returned » doit s'afficher.
-4. Recommencez avec [`supabase/migrations/0002_luna_storage.sql`](supabase/migrations/0002_luna_storage.sql).
+L'adresse du serveur et sa clé publique sont déjà dans `.env.production` :
+vous n'avez **rien à saisir** dans Netlify.
 
 ## Étape 3 — Activer les codes de connexion
 
@@ -72,33 +64,21 @@ Comptes 30 à 45 minutes. Aucune compétence en programmation n'est nécessaire.
    les identifiants du fournisseur.
 3. Sans cette étape, seule l'inscription par email fonctionne.
 
-## Étape 4 — Récupérer les 2 clés du projet
-
-Menu **Project Settings** → **API** (ou **Data API**) :
-
-- **Project URL** (ressemble à `https://abcdefgh.supabase.co`)
-- **anon public key** (longue suite de caractères)
-
-Ces deux valeurs peuvent être visibles dans l'application : c'est prévu. Les règles
-de sécurité sont dans la base de données. **Ne partagez jamais la clé `service_role`.**
-
-## Étape 5 — Publier l'application sur Netlify (gratuit)
+## Étape 4 — Publier l'application sur Netlify (gratuit)
 
 1. Allez sur **https://netlify.com** et connectez-vous avec votre compte GitHub.
 2. **Add new site** → **Import an existing project** → **GitHub** → choisissez **Luna**.
 3. Netlify lit automatiquement `netlify.toml` (commande `pnpm build`, dossier `dist`).
-4. Avant de lancer, ouvrez **Environment variables** et ajoutez :
-   - `VITE_SUPABASE_URL` = votre Project URL
-   - `VITE_SUPABASE_ANON_KEY` = votre anon public key
-5. Cliquez sur **Deploy**. Après 1 à 2 minutes, Netlify vous donne une adresse
+   Ne changez aucun réglage.
+4. Cliquez sur **Deploy**. Après 1 à 2 minutes, Netlify vous donne une adresse
    du type `https://luna-xxxx.netlify.app`.
-6. Dans Supabase, menu **Authentication** → **URL Configuration** : mettez cette
+5. Dans Supabase, menu **Authentication** → **URL Configuration** : mettez cette
    adresse dans **Site URL**.
 
 Ouvrez l'adresse sur votre téléphone : Luna fonctionne. 🎉
 
-> Sans les deux variables de l'étape 4, l'application démarre en **mode démo**
-> (données simulées sur le téléphone), comme dans Figma Make.
+> Pour revenir au **mode démo** (données simulées sur le téléphone), supprimez
+> le fichier `.env.production`.
 
 ---
 
