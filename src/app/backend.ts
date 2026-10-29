@@ -59,7 +59,11 @@ export async function sendOtp(method: AuthMethod, value: string): Promise<void> 
   const { error } =
     method === 'phone'
       ? await client().auth.signInWithOtp({ phone: normalizePhone(value) })
-      : await client().auth.signInWithOtp({ email: value.trim().toLowerCase() });
+      : await client().auth.signInWithOtp({
+          email: value.trim().toLowerCase(),
+          // L'email peut contenir un lien : il ramène sur Luna, déjà connecté
+          options: { emailRedirectTo: window.location.origin },
+        });
   if (error) fail(error);
 }
 
@@ -74,6 +78,14 @@ export async function verifyOtp(method: AuthMethod, value: string, token: string
 export async function hasSession(): Promise<boolean> {
   const { data } = await client().auth.getSession();
   return !!data.session;
+}
+
+// Appelé quand l'utilisateur se connecte (par exemple via le lien de l'email)
+export function onSignedIn(callback: () => void): () => void {
+  const { data } = client().auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_IN') callback();
+  });
+  return () => data.subscription.unsubscribe();
 }
 
 export async function signOut(): Promise<void> {
