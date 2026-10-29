@@ -1,7 +1,7 @@
 // Service worker de Luna : ouverture rapide et page de secours hors connexion.
 // Il ne met jamais en cache les données du serveur (Supabase) : soldes,
 // transactions et comptes sont toujours lus en direct.
-const CACHE = 'luna-v2';
+const CACHE = 'luna-v3';
 const SHELL = ['/', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {
