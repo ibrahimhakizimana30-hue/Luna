@@ -1,0 +1,102 @@
+/* Palette de Luna : les 3 couleurs du drapeau du Congo
+   (les mêmes que l'écran d'ouverture).
+
+   L'application utilisait des classes Tailwind violettes, bleues et roses.
+   Plutôt que de modifier des centaines de classes, on redéfinit ici ces
+   palettes :
+     - violet / indigo  →  VERT du drapeau   (#009543)
+     - bleu / cyan / ciel → JAUNE doré du drapeau (#fbde4a, plus foncé pour le texte)
+     - rose / fuchsia   →  ROUGE du drapeau  (#dc241f)
+   Les couleurs « de signal » (vert succès, rouge erreur, orange alerte)
+   restent inchangées. */
+
+@theme {
+  /* Vert du Congo */
+  --color-purple-50: #ecfdf3;
+  --color-purple-100: #d1fae0;
+  --color-purple-200: #a7f0c4;
+  --color-purple-300: #6ddf9c;
+  --color-purple-400: #2fc46f;
+  --color-purple-500: #0aa651;
+  --color-purple-600: #009543;
+  --color-purple-700: #007a37;
+  --color-purple-800: #06602e;
+  --color-purple-900: #064e27;
+  --color-purple-950: #022c15;
+
+  --color-violet-50: #ecfdf3;
+  --color-violet-100: #d1fae0;
+  --color-violet-200: #a7f0c4;
+  --color-violet-300: #6ddf9c;
+  --color-violet-400: #2fc46f;
+  --color-violet-500: #0aa651;
+  --color-violet-600: #009543;
+  --color-violet-700: #007a37;
+  --color-violet-800: #06602e;
+  --color-violet-900: #064e27;
+  --color-violet-950: #022c15;
+
+  --color-indigo-50: #ecfdf3;
+  --color-indigo-100: #d1fae0;
+  --color-indigo-200: #a7f0c4;
+  --color-indigo-300: #6ddf9c;
+  --color-indigo-400: #2fc46f;
+  --color-indigo-500: #0aa651;
+  --color-indigo-600: #007a37;
+  --color-indigo-700: #06602e;
+  --color-indigo-800: #064e27;
+  --color-indigo-900: #043a1d;
+  --color-indigo-950: #022c15;
+
+  /* Jaune doré du Congo (tons foncés pour rester lisibles sur fond blanc) */
+  --color-blue-50: #fffbea;
+  --color-blue-100: #fff3c4;
+  --color-blue-200: #ffe78a;
+  --color-blue-300: #fbde4a;
+  --color-blue-400: #f2c925;
+  --color-blue-500: #b8860b;
+  --color-blue-600: #9c7604;
+  --color-blue-700: #7d5e05;
+  --color-blue-800: #644b0a;
+  --color-blue-900: #4f3c0d;
+  --color-blue-950: #2e2203;
+
+  --color-cyan-50: #fffbea;
+  --color-cyan-100: #fff3c4;
+  --color-cyan-200: #ffe78a;
+  --color-cyan-300: #fbde4a;
+  --color-cyan-400: #f2c925;
+  --color-cyan-500: #b8860b;
+  --color-cyan-600: #9c7604;
+  --color-cyan-700: #7d5e05;
+  --color-cyan-800: #644b0a;
+  --color-cyan-900: #4f3c0d;
+
+  --color-sky-50: #fffbea;
+  --color-sky-100: #fff3c4;
+  --color-sky-500: #b8860b;
+  --color-sky-600: #9c7604;
+
+  /* Rouge du Congo */
+  --color-pink-50: #fef2f2;
+  --color-pink-100: #fee2e2;
+  --color-pink-200: #fecaca;
+  --color-pink-300: #fca5a5;
+  --color-pink-400: #f26b67;
+  --color-pink-500: #e23b36;
+  --color-pink-600: #dc241f;
+  --color-pink-700: #b91c1c;
+  --color-pink-800: #991b1b;
+  --color-pink-900: #7f1d1d;
+  --color-pink-950: #450a0a;
+
+  --color-fuchsia-500: #e23b36;
+  --color-fuchsia-600: #dc241f;
+}
+
+/* Ruban aux couleurs du drapeau, réutilisable en haut des écrans */
+.luna-ribbon {
+  height: 4px;
+  width: 100%;
+  background: linear-gradient(90deg, #009543 0 33.3%, #fbde4a 33.3% 66.6%, #dc241f 66.6% 100%);
+}
