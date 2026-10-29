@@ -1,48 +1,107 @@
-import { useState } from 'react';
-import { Lock, AlertCircle, Fingerprint } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AlertCircle, Fingerprint } from 'lucide-react';
+import {
+  MAX_PIN_ATTEMPTS,
+  checkPin,
+  getFailedAttempts,
+  getLockoutUntil,
+  recordFailedAttempt,
+  resetFailedAttempts,
+} from '../security/pin';
+import { verifyBiometric } from '../security/biometric';
 
 export function PinLogin({
-  correctPin,
   onSuccess,
-  biometricEnabled
+  biometricEnabled,
+  onForgotPin,
 }: {
-  correctPin: string;
   onSuccess: () => void;
   biometricEnabled: boolean;
+  onForgotPin: () => void;
 }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
-  const [attempts, setAttempts] = useState(0);
+  const [attempts, setAttempts] = useState(getFailedAttempts);
+  const [lockoutUntil, setLockoutUntil] = useState(getLockoutUntil);
+  const [now, setNow] = useState(Date.now());
+  const [isChecking, setIsChecking] = useState(false);
 
-  const handlePinInput = (value: string) => {
-    if (pin.length < 4) {
-      const newPin = pin + value;
-      setPin(newPin);
+  const isLocked = lockoutUntil > now;
+  const secondsLeft = Math.ceil((lockoutUntil - now) / 1000);
 
-      if (newPin.length === 4) {
-        if (newPin === correctPin) {
-          setTimeout(() => onSuccess(), 300);
-        } else {
-          setError('Code PIN incorrect');
-          setAttempts(attempts + 1);
-          setTimeout(() => {
-            setPin('');
-            setError('');
-          }, 1500);
-        }
-      }
+  // Compte à rebours pendant le blocage
+  useEffect(() => {
+    if (lockoutUntil <= Date.now()) return;
+    const interval = setInterval(() => {
+      const current = Date.now();
+      setNow(current);
+      if (current >= lockoutUntil) clearInterval(interval);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutUntil]);
+
+  const handlePinInput = async (value: string) => {
+    if (isLocked || isChecking || pin.length >= 4) return;
+
+    const newPin = pin + value;
+    setPin(newPin);
+    if (newPin.length < 4) return;
+
+    setIsChecking(true);
+    const isValid = await checkPin(newPin);
+
+    if (isValid) {
+      resetFailedAttempts();
+      setTimeout(() => onSuccess(), 300);
+      return;
     }
+
+    const result = recordFailedAttempt();
+    setAttempts(result.attempts);
+    setLockoutUntil(result.lockoutUntil);
+    setNow(Date.now());
+
+    const remaining = MAX_PIN_ATTEMPTS - (result.attempts % MAX_PIN_ATTEMPTS);
+    setError(
+      result.lockoutUntil > Date.now()
+        ? 'Code PIN incorrect'
+        : `Code PIN incorrect (${remaining} essai${remaining > 1 ? 's' : ''} restant${remaining > 1 ? 's' : ''})`
+    );
+    setTimeout(() => {
+      setPin('');
+      setError('');
+      setIsChecking(false);
+    }, 1500);
   };
 
   const handleDelete = () => {
+    if (isChecking) return;
     setPin(pin.slice(0, -1));
   };
 
-  const handleBiometricLogin = () => {
-    // Simuler la vérification biométrique
-    setTimeout(() => {
+  const handleBiometricLogin = async () => {
+    if (isChecking) return;
+    setIsChecking(true);
+    setError('');
+
+    const isValid = await verifyBiometric();
+    if (isValid) {
+      resetFailedAttempts();
       onSuccess();
-    }, 1000);
+      return;
+    }
+
+    setError('Empreinte non reconnue. Utilisez votre code PIN.');
+    setIsChecking(false);
+  };
+
+  const handleForgotPin = () => {
+    const confirmed = confirm(
+      'Pour réinitialiser votre code PIN, vous devez vous réinscrire.\n\n' +
+      'Toutes les données Luna enregistrées sur cet appareil seront effacées.\n\n' +
+      'Continuer ?'
+    );
+    if (confirmed) onForgotPin();
   };
 
   return (
@@ -58,10 +117,14 @@ export function PinLogin({
           <p className="text-gray-600">Entrez votre code PIN</p>
         </div>
 
-        {error && (
+        {(error || isLocked) && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-6 flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-red-600" />
-            <span className="text-sm text-red-800 font-medium">{error}</span>
+            <span className="text-sm text-red-800 font-medium">
+              {isLocked
+                ? `Trop d'essais. Réessayez dans ${secondsLeft} s.`
+                : error}
+            </span>
           </div>
         )}
 
@@ -89,7 +152,8 @@ export function PinLogin({
             <button
               key={num}
               onClick={() => handlePinInput(num.toString())}
-              className="h-16 bg-purple-50 hover:bg-purple-100 rounded-xl text-2xl font-bold text-purple-900 transition-colors active:scale-95"
+              disabled={isLocked}
+              className="h-16 bg-purple-50 hover:bg-purple-100 rounded-xl text-2xl font-bold text-purple-900 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {num}
             </button>
@@ -106,7 +170,8 @@ export function PinLogin({
           )}
           <button
             onClick={() => handlePinInput('0')}
-            className="h-16 bg-purple-50 hover:bg-purple-100 rounded-xl text-2xl font-bold text-purple-900 transition-colors active:scale-95"
+            disabled={isLocked}
+            className="h-16 bg-purple-50 hover:bg-purple-100 rounded-xl text-2xl font-bold text-purple-900 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             0
           </button>
@@ -120,7 +185,10 @@ export function PinLogin({
 
         {attempts >= 3 && (
           <div className="text-center">
-            <button className="text-purple-600 font-semibold text-sm hover:underline">
+            <button
+              onClick={handleForgotPin}
+              className="text-purple-600 font-semibold text-sm hover:underline"
+            >
               Code PIN oublié ?
             </button>
           </div>

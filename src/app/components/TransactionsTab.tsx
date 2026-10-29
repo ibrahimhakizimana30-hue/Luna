@@ -182,13 +182,13 @@ export function TransactionsTab() {
                     </span>
                   </div>
                   {transaction.status === 'pending' && (
-                    <Clock className="w-5 h-5 text-orange-500" title="En attente de synchronisation" />
+                    <span title="En attente de synchronisation"><Clock className="w-5 h-5 text-orange-500" aria-label="En attente de synchronisation" /></span>
                   )}
                   {transaction.status === 'synced' && (
-                    <CheckCircle2 className="w-5 h-5 text-blue-500" title="Synchronisé" />
+                    <span title="Synchronisé"><CheckCircle2 className="w-5 h-5 text-blue-500" aria-label="Synchronisé" /></span>
                   )}
                   {transaction.status === 'completed' && (
-                    <CheckCircle2 className="w-5 h-5 text-green-500" title="Complété" />
+                    <span title="Complété"><CheckCircle2 className="w-5 h-5 text-green-500" aria-label="Complété" /></span>
                   )}
                 </div>
               </div>

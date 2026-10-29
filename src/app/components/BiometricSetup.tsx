@@ -1,19 +1,37 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Fingerprint, CheckCircle2, AlertCircle } from 'lucide-react';
+import { isBiometricAvailable, registerBiometric } from '../security/biometric';
 
-export function BiometricSetup({ onComplete, onSkip }: { onComplete: () => void; onSkip: () => void }) {
+export function BiometricSetup({
+  userLabel,
+  onComplete,
+  onSkip,
+}: {
+  userLabel: string;
+  onComplete: () => void;
+  onSkip: () => void;
+}) {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState('');
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
 
-  const handleEnableBiometric = () => {
+  useEffect(() => {
+    isBiometricAvailable().then(setIsAvailable);
+  }, []);
+
+  const handleEnableBiometric = async () => {
     setIsScanning(true);
     setError('');
 
-    // Simuler la configuration de l'empreinte
-    setTimeout(() => {
+    try {
+      // L'appareil affiche sa propre demande d'empreinte
+      await registerBiometric(userLabel);
       setIsScanning(false);
       onComplete();
-    }, 2000);
+    } catch {
+      setIsScanning(false);
+      setError("L'empreinte n'a pas pu être enregistrée. Réessayez ou passez cette étape.");
+    }
   };
 
   return (
@@ -34,6 +52,15 @@ export function BiometricSetup({ onComplete, onSkip }: { onComplete: () => void;
             Utilisez votre empreinte digitale pour un accès rapide et sécurisé à Luna
           </p>
         </div>
+
+        {isAvailable === false && (
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-6 flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
+            <span className="text-sm text-orange-800 font-medium">
+              Cet appareil ou ce navigateur ne permet pas d'utiliser l'empreinte digitale.
+            </span>
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-6 flex items-center gap-2">
@@ -74,7 +101,7 @@ export function BiometricSetup({ onComplete, onSkip }: { onComplete: () => void;
         <div className="space-y-3">
           <button
             onClick={handleEnableBiometric}
-            disabled={isScanning}
+            disabled={isScanning || !isAvailable}
             className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-4 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isScanning ? 'Configuration en cours...' : 'Activer l\'empreinte digitale'}

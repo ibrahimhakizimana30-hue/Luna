@@ -16,6 +16,8 @@ import { SignupLogin } from './components/SignupLogin';
 import { FreeTrialBanner } from './components/FreeTrialBanner';
 import { TrialExpiredModal } from './components/TrialExpiredModal';
 import { Wallet, MessageCircle, Video, Home, PiggyBank } from 'lucide-react';
+import { hasPin, migrateLegacyPin, savePin } from './security/pin';
+import { getBiometricCredentialId } from './security/biometric';
 
 type Tab = 'home' | 'transactions' | 'messages' | 'calls' | 'savings';
 
@@ -47,7 +49,6 @@ export default function App() {
   const [isPinSet, setIsPinSet] = useState(false);
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userPin, setUserPin] = useState('');
   const [userContact, setUserContact] = useState('');
   const [showSignup, setShowSignup] = useState(false);
   const [showKYC, setShowKYC] = useState(false);
@@ -62,50 +63,55 @@ export default function App() {
 
   // Vérifier le statut de sécurité et période d'essai au chargement
   useEffect(() => {
-    const registered = localStorage.getItem('luna_registered') === 'true';
-    const contact = localStorage.getItem('luna_user_contact') || '';
-    const kycVerified = localStorage.getItem('luna_kyc_verified') === 'true';
-    const pinSet = localStorage.getItem('luna_pin_set') === 'true';
-    const storedPin = localStorage.getItem('luna_user_pin') || '';
-    const biometricEnabled = localStorage.getItem('luna_biometric_enabled') === 'true';
-    const hasSeenTutorial = localStorage.getItem('luna_tutorial_seen');
-    const trialStart = localStorage.getItem('luna_trial_start');
+    const init = async () => {
+      // Convertit un ancien PIN stocké en clair avant toute lecture
+      await migrateLegacyPin();
 
-    setIsRegistered(registered);
-    setUserContact(contact);
-    setIsKYCVerified(kycVerified);
-    setIsPinSet(pinSet);
-    setUserPin(storedPin);
-    setIsBiometricEnabled(biometricEnabled);
+      const registered = localStorage.getItem('luna_registered') === 'true';
+      const contact = localStorage.getItem('luna_user_contact') || '';
+      const kycVerified = localStorage.getItem('luna_kyc_verified') === 'true';
+      const pinSet = hasPin();
+      const biometricEnabled = !!getBiometricCredentialId();
+      const hasSeenTutorial = localStorage.getItem('luna_tutorial_seen');
+      const trialStart = localStorage.getItem('luna_trial_start');
 
-    // Calculer les jours restants de la période d'essai
-    if (trialStart) {
-      const startDate = new Date(trialStart);
-      setTrialStartDate(startDate);
-      const now = new Date();
-      const diffTime = now.getTime() - startDate.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      const remaining = Math.max(0, 7 - diffDays);
-      setTrialDaysRemaining(remaining);
+      setIsRegistered(registered);
+      setUserContact(contact);
+      setIsKYCVerified(kycVerified);
+      setIsPinSet(pinSet);
+      setIsBiometricEnabled(biometricEnabled);
 
-      // Si période d'essai expirée et pas de KYC
-      if (remaining === 0 && !kycVerified) {
-        setShowTrialExpired(true);
+      // Calculer les jours restants de la période d'essai
+      if (trialStart) {
+        const startDate = new Date(trialStart);
+        setTrialStartDate(startDate);
+        const now = new Date();
+        const diffTime = now.getTime() - startDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const remaining = Math.max(0, 7 - diffDays);
+        setTrialDaysRemaining(remaining);
+
+        // Si période d'essai expirée et pas de KYC
+        if (remaining === 0 && !kycVerified) {
+          setShowTrialExpired(true);
+        }
       }
-    }
 
-    // Déterminer quel écran afficher
-    if (!registered) {
-      setShowSignup(true);
-    } else if (!pinSet) {
-      setShowPinSetup(true);
-    } else {
-      setShowPinLogin(true);
-    }
+      // Déterminer quel écran afficher
+      if (!registered) {
+        setShowSignup(true);
+      } else if (!pinSet) {
+        setShowPinSetup(true);
+      } else {
+        setShowPinLogin(true);
+      }
 
-    if (!hasSeenTutorial && registered && pinSet) {
-      setShowTutorial(true);
-    }
+      if (!hasSeenTutorial && registered && pinSet) {
+        setShowTutorial(true);
+      }
+    };
+
+    init();
   }, []);
 
   // Vérifier la période d'essai toutes les heures
@@ -160,20 +166,18 @@ export default function App() {
     localStorage.setItem('luna_kyc_verified', 'true');
   };
 
-  const handlePinSetupComplete = (pin: string) => {
-    setUserPin(pin);
+  const handlePinSetupComplete = async (pin: string) => {
+    // Seul un hachage du PIN est enregistré, jamais le PIN lui-même
+    await savePin(pin);
     setIsPinSet(true);
     setShowPinSetup(false);
     setShowBiometricSetup(true);
-    localStorage.setItem('luna_pin_set', 'true');
-    localStorage.setItem('luna_user_pin', pin);
   };
 
   const handleBiometricSetupComplete = () => {
     setIsBiometricEnabled(true);
     setShowBiometricSetup(false);
     setIsAuthenticated(true);
-    localStorage.setItem('luna_biometric_enabled', 'true');
   };
 
   const handleBiometricSkip = () => {
@@ -184,6 +188,15 @@ export default function App() {
   const handlePinLoginSuccess = () => {
     setShowPinLogin(false);
     setIsAuthenticated(true);
+  };
+
+  // PIN oublié : sans serveur, on ne peut pas vérifier l'identité autrement.
+  // On efface donc les données Luna de cet appareil et on repart de l'inscription.
+  const handleForgotPin = () => {
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith('luna_'))
+      .forEach((key) => localStorage.removeItem(key));
+    window.location.reload();
   };
 
   const handleNewMessage = (message: Message) => {
@@ -219,11 +232,11 @@ export default function App() {
   }
 
   if (showBiometricSetup) {
-    return <BiometricSetup onComplete={handleBiometricSetupComplete} onSkip={handleBiometricSkip} />;
+    return <BiometricSetup userLabel={userContact} onComplete={handleBiometricSetupComplete} onSkip={handleBiometricSkip} />;
   }
 
   if (showPinLogin) {
-    return <PinLogin correctPin={userPin} onSuccess={handlePinLoginSuccess} biometricEnabled={isBiometricEnabled} />;
+    return <PinLogin onSuccess={handlePinLoginSuccess} biometricEnabled={isBiometricEnabled} onForgotPin={handleForgotPin} />;
   }
 
   // Afficher l'application seulement si authentifié
