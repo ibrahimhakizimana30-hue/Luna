@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Mail, Phone, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
-import { isBackendEnabled, normalizePhone, sendOtp, verifyOtp } from '../backend';
+import { hasSession, isBackendEnabled, normalizePhone, onSignedIn, sendOtp, verifyOtp } from '../backend';
 
 type AuthMethod = 'phone' | 'email';
 
@@ -15,6 +15,22 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
   const [info, setInfo] = useState('');
 
   const contactValue = method === 'phone' ? normalizePhone(phoneNumber) : email.trim().toLowerCase();
+
+  // Connexion par le lien de l'email (dans cet onglet ou un autre)
+  useEffect(() => {
+    if (!isBackendEnabled || step !== 'verify') return;
+    const stop = onSignedIn(() => onComplete(method, contactValue));
+    return stop;
+  }, [step, method, contactValue, onComplete]);
+
+  const handleLinkOpened = async () => {
+    setError('');
+    if (await hasSession()) {
+      onComplete(method, contactValue);
+    } else {
+      setError("Connexion pas encore confirmée. Ouvrez le lien de l'email dans ce navigateur, ou saisissez le code.");
+    }
+  };
 
   const handleSendCode = async () => {
     if (!contactValue) return;
@@ -214,6 +230,21 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
                   Entrez le code envoyé à {method === 'phone' ? phoneNumber : email}
                 </p>
               </div>
+
+              {isBackendEnabled && method === 'email' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-900 space-y-3">
+                  <p>
+                    <strong>Vous avez reçu un lien ?</strong> Ouvrez l'email et appuyez sur
+                    « Sign in » : Luna s'ouvrira connectée.
+                  </p>
+                  <button
+                    onClick={handleLinkOpened}
+                    className="w-full bg-white border border-blue-300 text-blue-700 py-2 rounded-lg font-semibold"
+                  >
+                    J'ai ouvert le lien
+                  </button>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
