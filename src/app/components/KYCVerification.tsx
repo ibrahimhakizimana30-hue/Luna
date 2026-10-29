@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Upload, Camera, CheckCircle2, AlertCircle, User, CreditCard, FileText } from 'lucide-react';
+import { isBackendEnabled, submitKyc } from '../backend';
 
 type DocumentType = 'id-card' | 'niu-card' | 'driver-license' | 'passport';
 type VerificationStep = 'documents' | 'selfie' | 'review' | 'completed';
@@ -19,6 +20,8 @@ export function KYCVerification({ onComplete }: { onComplete: () => void }) {
     verso: null,
   });
   const [selfie, setSelfie] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const documentTypes = [
     { id: 'id-card' as DocumentType, label: 'Pièce d\'identité', icon: User, needsVerso: true },
@@ -43,8 +46,29 @@ export function KYCVerification({ onComplete }: { onComplete: () => void }) {
     return documents.recto;
   };
 
-  const handleSubmit = () => {
-    // Simuler la vérification
+  const handleSubmit = async () => {
+    setSubmitError('');
+
+    if (isBackendEnabled) {
+      if (!documents.recto || !selfie) return;
+      const needsVerso = documentTypes.find(d => d.id === selectedDocType)?.needsVerso;
+      setIsSubmitting(true);
+      try {
+        // Les fichiers sont envoyés au serveur ; un administrateur valide ensuite
+        await submitKyc(selectedDocType, documents.recto, needsVerso ? documents.verso ?? null : null, selfie);
+      } catch (e) {
+        setSubmitError(e instanceof Error ? e.message : 'Envoi impossible, réessayez');
+        setIsSubmitting(false);
+        return;
+      }
+      setIsSubmitting(false);
+      setCurrentStep('completed');
+      setTimeout(() => onComplete(), 2500);
+      return;
+    }
+
+    // Mode démo : vérification simulée
+    setIsSubmitting(true);
     setTimeout(() => {
       setCurrentStep('completed');
       setTimeout(() => {
@@ -334,18 +358,27 @@ export function KYCVerification({ onComplete }: { onComplete: () => void }) {
                 </div>
               </div>
 
+              {submitError && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                  <span className="text-sm text-red-800 font-medium">{submitError}</span>
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setCurrentStep('selfie')}
+                  disabled={isSubmitting}
                   className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
                 >
                   Retour
                 </button>
                 <button
                   onClick={handleSubmit}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg"
+                  disabled={isSubmitting}
+                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg disabled:opacity-50"
                 >
-                  Soumettre la vérification
+                  {isSubmitting ? 'Envoi en cours...' : 'Soumettre la vérification'}
                 </button>
               </div>
             </div>

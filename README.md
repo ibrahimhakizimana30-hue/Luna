@@ -49,6 +49,11 @@ Luna est une application complète de paiement mobile, messagerie, appels et ép
 | **Premium** | 2,500 FCFA | 1.5% | 500,000 FCFA |
 | **VIP** | 5,000 FCFA | 0.5% | Illimité |
 
+## 🌐 Mise en ligne
+
+👉 Suivez **[MISE_EN_LIGNE.md](./MISE_EN_LIGNE.md)** pour brancher Luna sur un vrai serveur
+(Supabase) et la publier. Sans serveur configuré, l'application démarre en **mode démo**.
+
 ## 🚀 Démarrage
 
 ### Prérequis
@@ -61,6 +66,9 @@ Luna est une application complète de paiement mobile, messagerie, appels et ép
 ```bash
 # Installer les dépendances
 pnpm install
+
+# (Optionnel) brancher le serveur : copier .env.example en .env et remplir les clés
+cp .env.example .env
 
 # Lancer en mode développement
 pnpm run dev

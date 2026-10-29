@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Mail, Phone, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Mail, Phone, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { isBackendEnabled, normalizePhone, sendOtp, verifyOtp } from '../backend';
 
 type AuthMethod = 'phone' | 'email';
 
@@ -9,24 +10,58 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
   const [email, setEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [step, setStep] = useState<'input' | 'verify'>('input');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
 
-  const handleSendCode = () => {
-    if (method === 'phone' && phoneNumber) {
-      setStep('verify');
-    } else if (method === 'email' && email) {
-      setStep('verify');
+  const contactValue = method === 'phone' ? normalizePhone(phoneNumber) : email.trim().toLowerCase();
+
+  const handleSendCode = async () => {
+    if (!contactValue) return;
+    setError('');
+    setInfo('');
+
+    if (isBackendEnabled) {
+      // Le serveur envoie un vrai code par SMS ou par email
+      setIsLoading(true);
+      try {
+        await sendOtp(method, contactValue);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Envoi du code impossible');
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(false);
     }
+    setStep('verify');
   };
 
-  const handleVerify = () => {
-    // Simuler la vérification du code
-    if (verificationCode.length === 6) {
-      const value = method === 'phone' ? phoneNumber : email;
-      onComplete(method, value);
+  const handleVerify = async () => {
+    if (verificationCode.length < 6) return;
+    setError('');
+
+    if (isBackendEnabled) {
+      setIsLoading(true);
+      try {
+        await verifyOtp(method, contactValue, verificationCode);
+      } catch {
+        setError('Code incorrect ou expiré. Vérifiez-le ou demandez un nouveau code.');
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(false);
     }
+    // En mode démo, n'importe quel code à 6 chiffres est accepté
+    onComplete(method, contactValue);
   };
 
-  const isValidPhone = phoneNumber.startsWith('+242') && phoneNumber.length >= 12;
+  const handleResend = async () => {
+    setVerificationCode('');
+    await handleSendCode();
+    if (isBackendEnabled) setInfo('Un nouveau code a été envoyé.');
+  };
+
+  const isValidPhone = normalizePhone(phoneNumber).startsWith('+242') && normalizePhone(phoneNumber).length >= 12;
   const isValidEmail = email.includes('@') && email.includes('.');
 
   return (
@@ -44,6 +79,17 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
         </div>
 
         <div className="p-8">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-6 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <span className="text-sm text-red-800 font-medium">{error}</span>
+            </div>
+          )}
+          {info && !error && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-6 text-sm text-green-800 font-medium">
+              {info}
+            </div>
+          )}
           {step === 'input' ? (
             <div className="space-y-6">
               {/* Sélection de méthode */}
@@ -144,11 +190,11 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
 
               <button
                 onClick={handleSendCode}
-                disabled={method === 'phone' ? !isValidPhone : !isValidEmail}
+                disabled={isLoading || (method === 'phone' ? !isValidPhone : !isValidEmail)}
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-4 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Continuer
-                <ArrowRight className="w-5 h-5" />
+                {isLoading ? 'Envoi du code...' : 'Continuer'}
+                {!isLoading && <ArrowRight className="w-5 h-5" />}
               </button>
 
               <p className="text-xs text-center text-gray-500">
@@ -171,12 +217,14 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Code à 6 chiffres
+                  Code reçu (6 chiffres)
                 </label>
                 <input
                   type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
                   placeholder="000000"
-                  maxLength={6}
+                  maxLength={8}
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
                   className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-center text-2xl font-bold tracking-widest"
@@ -185,21 +233,25 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStep('input')}
+                  onClick={() => { setStep('input'); setError(''); setInfo(''); }}
                   className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
                 >
                   Retour
                 </button>
                 <button
                   onClick={handleVerify}
-                  disabled={verificationCode.length !== 6}
+                  disabled={isLoading || verificationCode.length < 6}
                   className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Vérifier
+                  {isLoading ? 'Vérification...' : 'Vérifier'}
                 </button>
               </div>
 
-              <button className="w-full text-purple-600 font-semibold text-sm hover:underline">
+              <button
+                onClick={handleResend}
+                disabled={isLoading}
+                className="w-full text-purple-600 font-semibold text-sm hover:underline disabled:opacity-50"
+              >
                 Renvoyer le code
               </button>
             </div>

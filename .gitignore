@@ -37,3 +37,7 @@ google-services.json
 # Node / Vite
 node_modules/
 dist/
+
+# Clés locales
+.env
+.env.local

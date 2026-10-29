@@ -1,11 +1,35 @@
+import { useEffect, useState } from 'react';
 import { BalanceDisplay } from './BalanceDisplay';
-import { Send, MessageCircle, Video, Plus, Bitcoin, Smartphone, Euro } from 'lucide-react';
+import { Send, MessageCircle, Video, Plus, Bitcoin, Smartphone, Euro, Wallet } from 'lucide-react';
+import { getBalance, isBackendEnabled } from '../backend';
+
+// Solde réel lu sur le serveur Luna
+function ServerBalance() {
+  const [balance, setBalance] = useState<number | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    getBalance().then(setBalance).catch(() => setError(true));
+  }, []);
+
+  return (
+    <div className="flex items-center gap-4 bg-white rounded-xl p-4 border-2 border-purple-200 shadow-md">
+      <Wallet className="w-8 h-8 text-purple-600" />
+      <div className="flex-1">
+        <p className="text-sm text-gray-600">Solde disponible</p>
+        <p className="text-2xl font-bold text-purple-900">
+          {error ? 'Indisponible' : balance === null ? '…' : `${balance.toLocaleString('fr-FR')} FCFA`}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export function DashboardStyle3() {
   return (
     <div className="space-y-6">
       {/* Solde compact */}
-      <BalanceDisplay variant="compact" />
+      {isBackendEnabled ? <ServerBalance /> : <BalanceDisplay variant="compact" />}
 
       {/* Menu d'actions coloré */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -42,7 +66,8 @@ export function DashboardStyle3() {
         </button>
       </div>
 
-      {/* Méthodes de paiement favorites */}
+      {/* Méthodes de paiement favorites (montants fictifs : mode démo uniquement) */}
+      {!isBackendEnabled && (
       <div className="bg-white rounded-2xl p-6 border-2 border-purple-200 shadow-lg">
         <h3 className="text-lg font-semibold text-purple-900 mb-4">Méthodes de paiement</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -79,6 +104,7 @@ export function DashboardStyle3() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Liste compacte */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

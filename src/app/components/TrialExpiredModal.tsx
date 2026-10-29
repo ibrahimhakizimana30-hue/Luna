@@ -1,6 +1,23 @@
 import { AlertCircle, Lock } from 'lucide-react';
 
-export function TrialExpiredModal({ onVerify }: { onVerify: () => void }) {
+export function TrialExpiredModal({ onVerify, kycPending = false }: { onVerify: () => void; kycPending?: boolean }) {
+  if (kycPending) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Vérification en cours</h2>
+          <p className="text-gray-600">
+            Votre période d'essai est terminée et vos documents sont en cours d'examen (24 à 48 h).
+            Les envois d'argent seront de nouveau possibles dès la validation de votre identité.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">

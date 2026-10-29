@@ -3,9 +3,27 @@ import { Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 interface FreeTrialBannerProps {
   daysRemaining: number;
   onUpgrade: () => void;
+  kycPending?: boolean;
 }
 
-export function FreeTrialBanner({ daysRemaining, onUpgrade }: FreeTrialBannerProps) {
+export function FreeTrialBanner({ daysRemaining, onUpgrade, kycPending = false }: FreeTrialBannerProps) {
+  if (kycPending) {
+    return (
+      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center gap-3">
+          <Clock className="w-6 h-6 flex-shrink-0" />
+          <div>
+            <p className="font-bold">Vérification d'identité en cours d'examen</p>
+            <p className="text-sm opacity-90">
+              La validation prend en général 24 à 48 h.
+              {daysRemaining > 0 && ` Essai gratuit : ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''} restant${daysRemaining > 1 ? 's' : ''}.`}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (daysRemaining <= 0) {
     return (
       <div className="bg-gradient-to-r from-red-500 to-pink-600 text-white p-4 shadow-lg">

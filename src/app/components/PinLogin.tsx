@@ -9,6 +9,30 @@ import {
   resetFailedAttempts,
 } from '../security/pin';
 import { verifyBiometric } from '../security/biometric';
+import { isBackendEnabled, verifyRemotePin } from '../backend';
+
+// Vérifie le PIN : sur le serveur s'il est configuré, sinon sur l'appareil.
+async function attemptPin(pin: string): Promise<{ ok: boolean; attemptsLeft: number; lockoutUntil: number }> {
+  if (isBackendEnabled) {
+    const result = await verifyRemotePin(pin);
+    return {
+      ok: result.ok,
+      attemptsLeft: result.attempts_left,
+      lockoutUntil: result.locked_until ? Date.parse(result.locked_until) : 0,
+    };
+  }
+
+  if (await checkPin(pin)) {
+    resetFailedAttempts();
+    return { ok: true, attemptsLeft: MAX_PIN_ATTEMPTS, lockoutUntil: 0 };
+  }
+  const failed = recordFailedAttempt();
+  return {
+    ok: false,
+    attemptsLeft: MAX_PIN_ATTEMPTS - (failed.attempts % MAX_PIN_ATTEMPTS),
+    lockoutUntil: failed.lockoutUntil,
+  };
+}
 
 export function PinLogin({
   onSuccess,
@@ -21,8 +45,8 @@ export function PinLogin({
 }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
-  const [attempts, setAttempts] = useState(getFailedAttempts);
-  const [lockoutUntil, setLockoutUntil] = useState(getLockoutUntil);
+  const [attempts, setAttempts] = useState(() => (isBackendEnabled ? 0 : getFailedAttempts()));
+  const [lockoutUntil, setLockoutUntil] = useState(() => (isBackendEnabled ? 0 : getLockoutUntil()));
   const [now, setNow] = useState(Date.now());
   const [isChecking, setIsChecking] = useState(false);
 
@@ -48,20 +72,29 @@ export function PinLogin({
     if (newPin.length < 4) return;
 
     setIsChecking(true);
-    const isValid = await checkPin(newPin);
+    let result;
+    try {
+      result = await attemptPin(newPin);
+    } catch {
+      setError('Connexion au serveur impossible. Vérifiez votre connexion internet.');
+      setTimeout(() => {
+        setPin('');
+        setError('');
+        setIsChecking(false);
+      }, 2500);
+      return;
+    }
 
-    if (isValid) {
-      resetFailedAttempts();
+    if (result.ok) {
       setTimeout(() => onSuccess(), 300);
       return;
     }
 
-    const result = recordFailedAttempt();
-    setAttempts(result.attempts);
+    setAttempts((count) => count + 1);
     setLockoutUntil(result.lockoutUntil);
     setNow(Date.now());
 
-    const remaining = MAX_PIN_ATTEMPTS - (result.attempts % MAX_PIN_ATTEMPTS);
+    const remaining = result.attemptsLeft;
     setError(
       result.lockoutUntil > Date.now()
         ? 'Code PIN incorrect'
@@ -86,7 +119,7 @@ export function PinLogin({
 
     const isValid = await verifyBiometric();
     if (isValid) {
-      resetFailedAttempts();
+      if (!isBackendEnabled) resetFailedAttempts();
       onSuccess();
       return;
     }
@@ -97,9 +130,11 @@ export function PinLogin({
 
   const handleForgotPin = () => {
     const confirmed = confirm(
-      'Pour réinitialiser votre code PIN, vous devez vous réinscrire.\n\n' +
-      'Toutes les données Luna enregistrées sur cet appareil seront effacées.\n\n' +
-      'Continuer ?'
+      isBackendEnabled
+        ? 'Pour choisir un nouveau code PIN, vous allez recevoir un code de vérification par SMS ou email.\n\nContinuer ?'
+        : 'Pour réinitialiser votre code PIN, vous devez vous réinscrire.\n\n' +
+          'Toutes les données Luna enregistrées sur cet appareil seront effacées.\n\n' +
+          'Continuer ?'
     );
     if (confirmed) onForgotPin();
   };

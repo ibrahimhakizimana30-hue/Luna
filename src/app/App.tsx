@@ -15,9 +15,27 @@ import { PinLogin } from './components/PinLogin';
 import { SignupLogin } from './components/SignupLogin';
 import { FreeTrialBanner } from './components/FreeTrialBanner';
 import { TrialExpiredModal } from './components/TrialExpiredModal';
-import { Wallet, MessageCircle, Video, Home, PiggyBank } from 'lucide-react';
+import { Wallet, MessageCircle, Video, Home, PiggyBank, LogOut, AlertCircle } from 'lucide-react';
 import { hasPin, migrateLegacyPin, savePin } from './security/pin';
 import { getBiometricCredentialId } from './security/biometric';
+import {
+  type Profile,
+  getProfile,
+  hasRemotePin,
+  hasSession,
+  isBackendEnabled,
+  setRemotePin,
+  signOut,
+} from './backend';
+
+// Demande de nouveau PIN après « Code PIN oublié ? » (mode serveur)
+const PIN_RESET_KEY = 'luna_pin_reset';
+const TRIAL_DAYS = 7;
+
+function trialDaysLeft(start: Date): number {
+  const diffDays = Math.floor((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(0, TRIAL_DAYS - diffDays);
+}
 
 type Tab = 'home' | 'transactions' | 'messages' | 'calls' | 'savings';
 
@@ -55,15 +73,64 @@ export default function App() {
   const [showPinSetup, setShowPinSetup] = useState(false);
   const [showBiometricSetup, setShowBiometricSetup] = useState(false);
   const [showPinLogin, setShowPinLogin] = useState(false);
+  const [kycStatus, setKycStatus] = useState<Profile['kyc_status']>('none');
+  const [loadError, setLoadError] = useState('');
 
   // Période d'essai
   const [trialStartDate, setTrialStartDate] = useState<Date | null>(null);
   const [trialDaysRemaining, setTrialDaysRemaining] = useState(7);
   const [showTrialExpired, setShowTrialExpired] = useState(false);
 
+  const applyTrial = (start: Date, kycApproved: boolean) => {
+    const remaining = trialDaysLeft(start);
+    setTrialStartDate(start);
+    setTrialDaysRemaining(remaining);
+    if (remaining === 0 && !kycApproved) {
+      setShowTrialExpired(true);
+    }
+  };
+
+  // Mode serveur : session, profil, PIN et KYC viennent du serveur Luna
+  const loadBackendState = async () => {
+    setLoadError('');
+    try {
+      if (!(await hasSession())) {
+        setShowSignup(true);
+        return;
+      }
+      const [profile, pinSet] = await Promise.all([getProfile(), hasRemotePin()]);
+      const approved = profile.kyc_status === 'approved';
+
+      setIsRegistered(true);
+      setUserContact(profile.contact);
+      setKycStatus(profile.kyc_status);
+      setIsKYCVerified(approved);
+      setIsPinSet(pinSet);
+      setIsBiometricEnabled(!!getBiometricCredentialId());
+      applyTrial(new Date(profile.trial_started_at), approved);
+
+      setShowSignup(false);
+      if (!pinSet || sessionStorage.getItem(PIN_RESET_KEY) === 'true') {
+        setShowPinSetup(true);
+      } else {
+        setShowPinLogin(true);
+      }
+      if (pinSet && !localStorage.getItem('luna_tutorial_seen')) {
+        setShowTutorial(true);
+      }
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : 'Connexion au serveur impossible');
+    }
+  };
+
   // Vérifier le statut de sécurité et période d'essai au chargement
   useEffect(() => {
     const init = async () => {
+      if (isBackendEnabled) {
+        await loadBackendState();
+        return;
+      }
+
       // Convertit un ancien PIN stocké en clair avant toute lecture
       await migrateLegacyPin();
 
@@ -139,6 +206,12 @@ export default function App() {
   };
 
   const handleSignupComplete = (method: 'phone' | 'email', value: string) => {
+    if (isBackendEnabled) {
+      // Compte nouveau ou existant : le serveur indique où reprendre
+      loadBackendState();
+      return;
+    }
+
     setIsRegistered(true);
     setUserContact(value);
     setShowSignup(false);
@@ -160,6 +233,14 @@ export default function App() {
   };
 
   const handleKYCComplete = () => {
+    if (isBackendEnabled) {
+      // Les documents sont envoyés : un administrateur doit maintenant valider
+      setKycStatus('pending');
+      setShowKYC(false);
+      setIsAuthenticated(true);
+      return;
+    }
+
     setIsKYCVerified(true);
     setShowKYC(false);
     setIsAuthenticated(true);
@@ -167,8 +248,21 @@ export default function App() {
   };
 
   const handlePinSetupComplete = async (pin: string) => {
-    // Seul un hachage du PIN est enregistré, jamais le PIN lui-même
-    await savePin(pin);
+    if (isBackendEnabled) {
+      try {
+        await setRemotePin(pin);
+        sessionStorage.removeItem(PIN_RESET_KEY);
+      } catch (e) {
+        alert(e instanceof Error ? e.message : 'Enregistrement du PIN impossible');
+        sessionStorage.removeItem(PIN_RESET_KEY);
+        await signOut();
+        window.location.reload();
+        return;
+      }
+    } else {
+      // Seul un hachage du PIN est enregistré, jamais le PIN lui-même
+      await savePin(pin);
+    }
     setIsPinSet(true);
     setShowPinSetup(false);
     setShowBiometricSetup(true);
@@ -190,9 +284,16 @@ export default function App() {
     setIsAuthenticated(true);
   };
 
-  // PIN oublié : sans serveur, on ne peut pas vérifier l'identité autrement.
-  // On efface donc les données Luna de cet appareil et on repart de l'inscription.
-  const handleForgotPin = () => {
+  // PIN oublié.
+  // Mode serveur : on se reconnecte avec un code SMS/email, puis on choisit un nouveau PIN.
+  // Mode démo : on efface les données Luna de l'appareil et on repart de l'inscription.
+  const handleForgotPin = async () => {
+    if (isBackendEnabled) {
+      sessionStorage.setItem(PIN_RESET_KEY, 'true');
+      await signOut();
+      window.location.reload();
+      return;
+    }
     Object.keys(localStorage)
       .filter((key) => key.startsWith('luna_'))
       .forEach((key) => localStorage.removeItem(key));
@@ -217,6 +318,30 @@ export default function App() {
     setSelectedContact(contact);
     setActiveTab('messages');
   };
+
+  const handleLogout = async () => {
+    if (!confirm('Se déconnecter de Luna sur cet appareil ?')) return;
+    await signOut();
+    window.location.reload();
+  };
+
+  if (loadError) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+          <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Connexion au serveur impossible</h2>
+          <p className="text-gray-600 mb-6">{loadError}</p>
+          <button
+            onClick={loadBackendState}
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-xl font-semibold"
+          >
+            Réessayer
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Afficher les écrans de sécurité si nécessaire
   if (showSignup) {
@@ -247,13 +372,14 @@ export default function App() {
   return (
     <div className="size-full bg-gradient-to-br from-violet-50 via-purple-50 to-blue-50 overflow-auto">
       {showTutorial && <Tutorial onClose={handleCloseTutorial} />}
-      {showTrialExpired && <TrialExpiredModal onVerify={handleStartKYC} />}
+      {showTrialExpired && <TrialExpiredModal onVerify={handleStartKYC} kycPending={kycStatus === 'pending'} />}
 
       {/* Bannière période d'essai */}
       {!isKYCVerified && (
         <FreeTrialBanner
           daysRemaining={trialDaysRemaining}
           onUpgrade={handleStartKYC}
+          kycPending={kycStatus === 'pending'}
         />
       )}
 
@@ -268,10 +394,22 @@ export default function App() {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Luna 🌙</h1>
             <p className="text-purple-700">Échanges, messages et appels</p>
           </div>
-          <OfflineIndicator />
+          <div className="flex items-center gap-2">
+            <OfflineIndicator />
+            {isBackendEnabled && (
+              <button
+                onClick={handleLogout}
+                title="Se déconnecter"
+                aria-label="Se déconnecter"
+                className="p-2 rounded-full text-purple-700 hover:bg-purple-100 transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
 
-        <SyncQueue />
+        {!isBackendEnabled && <SyncQueue />}
 
         <div className="bg-white rounded-xl shadow-lg border border-purple-200 overflow-hidden">
           <div className="flex border-b border-purple-100 overflow-x-auto">
@@ -333,6 +471,11 @@ export default function App() {
           </div>
 
           <div className="p-6">
+            {isBackendEnabled && ['messages', 'calls', 'savings'].includes(activeTab) && (
+              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                Cette fonction est encore en démonstration : les données affichées sont fictives.
+              </div>
+            )}
             {activeTab === 'home' && <DashboardStyle3 />}
             {activeTab === 'transactions' && <TransactionsTab />}
             {activeTab === 'savings' && <SavingsAccount />}

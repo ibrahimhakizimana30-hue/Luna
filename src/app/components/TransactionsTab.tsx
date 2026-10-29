@@ -3,6 +3,8 @@ import { Send, Clock, CheckCircle2, Plus, Bitcoin, Smartphone } from 'lucide-rea
 import { PaymentMethodSelector, PaymentMethod } from './PaymentMethodSelector';
 import { NewTransactionForm, TransactionData } from './NewTransactionForm';
 import { CryptoWallet } from './CryptoWallet';
+import { LunaTransfers } from './LunaTransfers';
+import { isBackendEnabled } from '../backend';
 
 interface Transaction {
   id: string;
@@ -16,6 +18,11 @@ interface Transaction {
 }
 
 export function TransactionsTab() {
+  // Avec le serveur Luna : vrais transferts. Sinon : démonstration.
+  return isBackendEnabled ? <LunaTransfers /> : <DemoTransactionsTab />;
+}
+
+function DemoTransactionsTab() {
   const [transactions, setTransactions] = useState<Transaction[]>([
     {
       id: '1',
