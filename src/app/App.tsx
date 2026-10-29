@@ -370,7 +370,9 @@ export default function App() {
   }
 
   return (
-    <div className="size-full bg-gradient-to-br from-violet-50 via-purple-50 to-blue-50 overflow-auto">
+    <div className="size-full bg-gradient-to-br from-purple-100 via-blue-50 to-pink-100 overflow-auto">
+      {/* Ruban aux couleurs du drapeau du Congo */}
+      <div className="luna-ribbon" />
       {showTutorial && <Tutorial onClose={handleCloseTutorial} />}
       {showTrialExpired && <TrialExpiredModal onVerify={handleStartKYC} kycPending={kycStatus === 'pending'} />}
 
@@ -412,6 +414,7 @@ export default function App() {
         {!isBackendEnabled && <SyncQueue />}
 
         <div className="bg-white rounded-xl shadow-lg border border-purple-200 overflow-hidden">
+          <div className="luna-ribbon" />
           <div className="flex border-b border-purple-100 overflow-x-auto">
             <button
               onClick={() => setActiveTab('home')}
