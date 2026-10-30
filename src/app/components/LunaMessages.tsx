@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, MessageCircle, Plus, Send } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Phone, Plus, Send, Video } from 'lucide-react';
+import { useCalls } from '../calls/CallProvider';
 import {
   getConversation,
   listConversations,
@@ -19,6 +20,7 @@ function formatTime(iso: string): string {
 
 // Discussion avec un contact
 function Chat({ contact, onBack }: { contact: string; onBack: () => void }) {
+  const calls = useCalls();
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -71,8 +73,29 @@ function Chat({ contact, onBack }: { contact: string; onBack: () => void }) {
         <button onClick={onBack} aria-label="Retour aux conversations" className="p-1.5 rounded-full hover:bg-purple-100 text-purple-700">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <p className="font-semibold text-purple-900 break-all">{contact}</p>
+        <p className="flex-1 font-semibold text-purple-900 break-all">{contact}</p>
+        {calls && (
+          <>
+            <button
+              onClick={() => void calls.placeCall(contact, 'audio')}
+              disabled={calls.inCall}
+              aria-label={`Appeler ${contact}`}
+              className="p-2 rounded-full text-green-700 hover:bg-green-50 disabled:opacity-40"
+            >
+              <Phone className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => void calls.placeCall(contact, 'video')}
+              disabled={calls.inCall}
+              aria-label={`Appel vidéo ${contact}`}
+              className="p-2 rounded-full text-purple-700 hover:bg-purple-50 disabled:opacity-40"
+            >
+              <Video className="w-5 h-5" />
+            </button>
+          </>
+        )}
       </div>
+      {calls?.lastError && <p className="px-3 py-2 text-sm text-red-700 bg-red-50 border-b border-red-200">{calls.lastError}</p>}
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {messages === null && <p className="text-sm text-gray-500">Chargement…</p>}

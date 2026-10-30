@@ -178,3 +178,25 @@ Dans Supabase : **Authentication → Emails → Templates**, coller ce modèle d
 
 `public/conditions.html` et `public/confidentialite.html` sont des **versions
 provisoires** à faire relire par un juriste avant l'ouverture au public.
+
+## Appels audio et vidéo
+
+Les appels utilisent WebRTC : le son et l'image passent directement entre les
+deux téléphones ; Supabase sert seulement à les mettre en relation.
+
+Sur certains réseaux mobiles (NAT restrictif), la connexion directe échoue
+(« Connexion impossible… Réessayez en Wi-Fi »). Pour ces cas, ajouter un
+serveur relais TURN (par ex. Cloudflare ou Metered) dans les variables
+d'environnement Netlify :
+
+```
+VITE_TURN_URLS=turn:adresse-du-serveur:3478
+VITE_TURN_USERNAME=…
+VITE_TURN_CREDENTIAL=…
+```
+
+## Épargne automatique
+
+Chaque jour à 7 h UTC (8 h à Brazzaville), la tâche planifiée
+`luna-epargne-auto` (pg_cron) verse l'épargne automatique des personnes dont
+c'est le jour choisi. Si le solde est insuffisant, le versement est sauté.

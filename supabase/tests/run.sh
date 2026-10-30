@@ -8,6 +8,7 @@ psql -d luna_test -v ON_ERROR_STOP=1 -q -f supabase_stubs.sql \
   -f ../migrations/0001_luna_init.sql -f ../migrations/0002_luna_storage.sql \
   -f ../migrations/0003_luna_hardening.sql \
   -f ../migrations/0004_luna_admin_messages.sql \
-  -f ../migrations/0005_luna_mobile_money.sql
-psql -d luna_test -v ON_ERROR_STOP=1 -q -f luna_rules_test.sql -f luna_admin_messages_test.sql -f luna_mobile_money_test.sql 2>&1 | sed -n 's/.*NOTICE:  //p'
+  -f ../migrations/0005_luna_mobile_money.sql \
+  -f ../migrations/0006_luna_savings_calls.sql
+psql -d luna_test -v ON_ERROR_STOP=1 -q -f luna_rules_test.sql -f luna_admin_messages_test.sql -f luna_mobile_money_test.sql -f luna_savings_calls_test.sql 2>&1 | sed -n 's/.*NOTICE:  //p'
 psql -q -c "drop database luna_test"
