@@ -198,3 +198,105 @@ export async function submitKyc(
   });
   if (error) fail(error);
 }
+
+// --- Administration des pièces d'identité ----------------------------------
+
+export interface KycSubmission {
+  id: string;
+  user_id: string;
+  contact: string;
+  doc_type: string;
+  recto_path: string;
+  verso_path: string | null;
+  selfie_path: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+}
+
+export async function isAdmin(): Promise<boolean> {
+  const { data, error } = await client().rpc('is_admin');
+  if (error) return false;
+  return data === true;
+}
+
+export async function adminListKyc(status: KycSubmission['status'] | null): Promise<KycSubmission[]> {
+  const { data, error } = await client().rpc('admin_list_kyc', { p_status: status });
+  if (error) fail(error);
+  return data as KycSubmission[];
+}
+
+export async function adminReviewKyc(submissionId: string, approve: boolean): Promise<void> {
+  const { error } = await client().rpc('admin_review_kyc', {
+    p_submission_id: submissionId,
+    p_approve: approve,
+  });
+  if (error) fail(error);
+}
+
+// Liens temporaires (10 minutes) pour afficher les photos privées
+export async function kycFileUrls(paths: string[]): Promise<Record<string, string>> {
+  if (paths.length === 0) return {};
+  const { data, error } = await client().storage.from('kyc').createSignedUrls(paths, 600);
+  if (error) fail(error);
+  const urls: Record<string, string> = {};
+  for (const item of data ?? []) {
+    if (item.path && item.signedUrl) urls[item.path] = item.signedUrl;
+  }
+  return urls;
+}
+
+// --- Messagerie ------------------------------------------------------------
+
+export interface Conversation {
+  contact: string;
+  last_body: string;
+  last_at: string;
+  last_from_me: boolean;
+  unread: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  from_me: boolean;
+  body: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+function normalizeContact(contact: string): string {
+  return contact.includes('@') ? contact.trim().toLowerCase() : normalizePhone(contact);
+}
+
+export async function sendMessage(recipientContact: string, body: string): Promise<void> {
+  const { error } = await client().rpc('send_message', {
+    p_recipient_contact: normalizeContact(recipientContact),
+    p_body: body,
+  });
+  if (error) fail(error);
+}
+
+export async function listConversations(): Promise<Conversation[]> {
+  const { data, error } = await client().rpc('my_conversations');
+  if (error) fail(error);
+  return data as Conversation[];
+}
+
+export async function getConversation(contact: string): Promise<ChatMessage[]> {
+  const { data, error } = await client().rpc('conversation_messages', {
+    p_contact: normalizeContact(contact),
+    p_limit: 200,
+  });
+  if (error) fail(error);
+  return data as ChatMessage[];
+}
+
+// Prévient dès qu'un message est envoyé ou reçu (en direct)
+export function onMessagesChanged(callback: () => void): () => void {
+  const channel = client()
+    .channel(`messages-${Math.random().toString(36).slice(2)}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => callback())
+    .subscribe();
+  return () => {
+    void client().removeChannel(channel);
+  };
+}

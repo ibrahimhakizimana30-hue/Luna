@@ -214,7 +214,10 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
               </button>
 
               <p className="text-xs text-center text-gray-500">
-                En continuant, vous acceptez nos conditions d'utilisation
+                En continuant, vous acceptez nos{' '}
+                <a href="/conditions.html" target="_blank" rel="noreferrer" className="underline text-purple-700">conditions d'utilisation</a>
+                {' '}et notre{' '}
+                <a href="/confidentialite.html" target="_blank" rel="noreferrer" className="underline text-purple-700">politique de confidentialité</a>.
               </p>
             </div>
           ) : (

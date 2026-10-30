@@ -154,3 +154,27 @@ Tests des règles de la base (PostgreSQL 16 local) :
 ```bash
 PGHOST=localhost PGUSER=postgres ./supabase/tests/run.sh
 ```
+
+## Administration des pièces d'identité
+
+Les comptes administrateurs voient un bouton bouclier (🛡) en haut de l'accueil.
+Il ouvre la liste des demandes de vérification, avec les photos, et permet de
+les **valider** ou de les **refuser**.
+
+Pour nommer un autre administrateur (éditeur SQL de Supabase) :
+
+```sql
+insert into private.admins (user_id)
+  select id from public.profiles where contact = 'adresse@exemple.com';
+```
+
+## Emails de connexion en français
+
+Le modèle `supabase/templates/code_connexion.html` affiche le code à 6 chiffres.
+Dans Supabase : **Authentication → Emails → Templates**, coller ce modèle dans
+**Confirm signup** et dans **Magic Link**, avec pour sujet « Votre code Luna ».
+
+## Pages légales
+
+`public/conditions.html` et `public/confidentialite.html` sont des **versions
+provisoires** à faire relire par un juriste avant l'ouverture au public.
