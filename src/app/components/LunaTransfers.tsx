@@ -9,6 +9,7 @@ import {
   listTransactions,
   transfer,
 } from '../backend';
+import { MobileMoneyPay } from './MobileMoneyPay';
 
 // Transferts réels entre utilisateurs Luna (mode serveur).
 // Le solde, les frais, les limites et le code PIN sont contrôlés par le serveur.
@@ -234,9 +235,11 @@ export function LunaTransfers() {
       )}
 
       <p className="text-xs text-gray-500">
-        Mobile Money, Airtel Money et crypto : bientôt disponibles (accords opérateurs en cours).
-        Les soldes actuels sont des montants de test.
+        Le solde Luna est un montant de test, sans valeur réelle. Pour envoyer de l'argent réel, utilisez
+        « Payer par Mobile Money » ci-dessous : l'argent passe directement par votre opérateur.
       </p>
+
+      <MobileMoneyPay />
 
       {/* Historique */}
       <div>
