@@ -463,3 +463,34 @@ export function onCallsChanged(callback: () => void): () => void {
     void client().removeChannel(channel);
   };
 }
+
+// --- Notifications ------------------------------------------------------------
+
+export interface NotificationSettings {
+  messages: boolean;
+  calls: boolean;
+  money: boolean;
+  kyc: boolean;
+  previews: boolean;
+}
+
+export async function getNotificationSettings(): Promise<NotificationSettings> {
+  const { data, error } = await client().rpc('get_notification_settings');
+  if (error) fail(error);
+  return data as NotificationSettings;
+}
+
+export const setNotificationSettings = (s: NotificationSettings) =>
+  rpcVoid('set_notification_settings', {
+    p_messages: s.messages,
+    p_calls: s.calls,
+    p_money: s.money,
+    p_kyc: s.kyc,
+    p_previews: s.previews,
+  });
+
+export const savePushSubscription = (endpoint: string, p256dh: string, auth: string) =>
+  rpcVoid('save_push_subscription', { p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth });
+
+export const deletePushSubscription = (endpoint: string) =>
+  rpcVoid('delete_push_subscription', { p_endpoint: endpoint });
