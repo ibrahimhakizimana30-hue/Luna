@@ -81,12 +81,12 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
   const isValidEmail = email.includes('@') && email.includes('.');
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <div className="my-auto bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
         {/* En-tête */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-8 text-center">
-          <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur">
-            <span className="text-5xl">🌙</span>
+        <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6 sm:p-8 text-center">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur">
+            <span className="text-4xl sm:text-5xl">🌙</span>
           </div>
           <h1 className="text-3xl font-bold mb-2">Bienvenue sur Luna</h1>
           <p className="text-sm opacity-90">
@@ -94,7 +94,7 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
           </p>
         </div>
 
-        <div className="p-8">
+        <div className="p-6 sm:p-8">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-6 flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
@@ -156,6 +156,8 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
                       placeholder="+242 XXX XXX XXX"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && isValidPhone && !isLoading && void handleSendCode()}
+                      enterKeyHint="next"
                       className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     {phoneNumber && !isValidPhone && (
@@ -174,6 +176,8 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
                       placeholder="votre.email@gmail.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && isValidEmail && !isLoading && void handleSendCode()}
+                      enterKeyHint="next"
                       className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                     {email && !isValidEmail && (
@@ -184,6 +188,15 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
                   </div>
                 )}
               </div>
+
+              <button
+                onClick={handleSendCode}
+                disabled={isLoading || (method === 'phone' ? !isValidPhone : !isValidEmail)}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-4 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isLoading ? 'Envoi du code...' : 'Continuer'}
+                {!isLoading && <ArrowRight className="w-5 h-5" />}
+              </button>
 
               {/* Avantages période d'essai */}
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4">
@@ -203,15 +216,6 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
                   </div>
                 </div>
               </div>
-
-              <button
-                onClick={handleSendCode}
-                disabled={isLoading || (method === 'phone' ? !isValidPhone : !isValidEmail)}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-4 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isLoading ? 'Envoi du code...' : 'Continuer'}
-                {!isLoading && <ArrowRight className="w-5 h-5" />}
-              </button>
 
               <p className="text-xs text-center text-gray-500">
                 En continuant, vous acceptez nos{' '}
@@ -261,6 +265,8 @@ export function SignupLogin({ onComplete }: { onComplete: (method: AuthMethod, v
                   maxLength={8}
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                  onKeyDown={(e) => e.key === 'Enter' && verificationCode.length >= 6 && !isLoading && void handleVerify()}
+                  enterKeyHint="done"
                   className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-center text-2xl font-bold tracking-widest"
                 />
               </div>
