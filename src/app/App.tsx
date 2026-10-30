@@ -4,6 +4,8 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { SyncQueue } from './components/SyncQueue';
 import { TransactionsTab } from './components/TransactionsTab';
 import { MessagesTab } from './components/MessagesTab';
+import { LunaMessages } from './components/LunaMessages';
+import { AdminKyc } from './components/AdminKyc';
 import { CallsTab } from './components/CallsTab';
 import { Tutorial } from './components/Tutorial';
 import { NotificationBanner } from './components/NotificationBanner';
@@ -16,7 +18,7 @@ import { PinLogin } from './components/PinLogin';
 import { SignupLogin } from './components/SignupLogin';
 import { FreeTrialBanner } from './components/FreeTrialBanner';
 import { TrialExpiredModal } from './components/TrialExpiredModal';
-import { Wallet, MessageCircle, Video, Home, PiggyBank, LogOut, AlertCircle } from 'lucide-react';
+import { Wallet, MessageCircle, Video, Home, PiggyBank, LogOut, AlertCircle, ShieldCheck } from 'lucide-react';
 import { hasPin, migrateLegacyPin, savePin } from './security/pin';
 import { getBiometricCredentialId } from './security/biometric';
 import {
@@ -24,6 +26,7 @@ import {
   getProfile,
   hasRemotePin,
   hasSession,
+  isAdmin,
   isBackendEnabled,
   setRemotePin,
   signOut,
@@ -76,6 +79,8 @@ export default function App() {
   const [showPinLogin, setShowPinLogin] = useState(false);
   const [kycStatus, setKycStatus] = useState<Profile['kyc_status']>('none');
   const [loadError, setLoadError] = useState('');
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   // Période d'essai
   const [trialStartDate, setTrialStartDate] = useState<Date | null>(null);
@@ -104,6 +109,7 @@ export default function App() {
 
       setIsRegistered(true);
       setUserContact(profile.contact);
+      void isAdmin().then(setIsAdminUser);
       setKycStatus(profile.kyc_status);
       setIsKYCVerified(approved);
       setIsPinSet(pinSet);
@@ -374,6 +380,7 @@ export default function App() {
     <div className="size-full bg-gradient-to-br from-violet-50 via-purple-50 to-blue-50 overflow-auto">
       {/* Ruban aux couleurs du drapeau du Congo */}
       <div className="luna-ribbon" />
+      {showAdmin && <AdminKyc onClose={() => setShowAdmin(false)} />}
       {showTutorial && <Tutorial onClose={handleCloseTutorial} />}
       {showTrialExpired && <TrialExpiredModal onVerify={handleStartKYC} kycPending={kycStatus === 'pending'} />}
 
@@ -402,6 +409,16 @@ export default function App() {
           </div>
           <div className="flex items-center gap-2">
             <OfflineIndicator />
+            {isAdminUser && (
+              <button
+                onClick={() => setShowAdmin(true)}
+                title="Vérifier les identités"
+                aria-label="Vérifier les identités"
+                className="p-2 rounded-full text-purple-700 hover:bg-purple-100 transition-colors"
+              >
+                <ShieldCheck className="w-5 h-5" />
+              </button>
+            )}
             {isBackendEnabled && (
               <button
                 onClick={handleLogout}
@@ -478,15 +495,16 @@ export default function App() {
           </div>
 
           <div className="p-6">
-            {isBackendEnabled && ['messages', 'calls', 'savings'].includes(activeTab) && (
+            {isBackendEnabled && ['calls', 'savings'].includes(activeTab) && (
               <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
                 Cette fonction est encore en démonstration : les données affichées sont fictives.
               </div>
             )}
-            {activeTab === 'home' && <DashboardStyle3 />}
+            {activeTab === 'home' && <DashboardStyle3 onNavigate={setActiveTab} />}
             {activeTab === 'transactions' && <TransactionsTab />}
             {activeTab === 'savings' && <SavingsAccount />}
-            {activeTab === 'messages' && (
+            {activeTab === 'messages' && isBackendEnabled && <LunaMessages />}
+            {activeTab === 'messages' && !isBackendEnabled && (
               <MessagesTab
                 selectedContact={selectedContact}
                 setSelectedContact={setSelectedContact}
@@ -498,7 +516,13 @@ export default function App() {
         </div>
 
         <div className="text-center text-sm text-purple-600 font-medium">
-          <p>💡 Les actions effectuées hors ligne seront synchronisées automatiquement lors de la reconnexion</p>
+          {!isBackendEnabled && (
+            <p>💡 Les actions effectuées hors ligne seront synchronisées automatiquement lors de la reconnexion</p>
+          )}
+          <p className="mt-2 space-x-3">
+            <a href="/conditions.html" className="underline">Conditions d'utilisation</a>
+            <a href="/confidentialite.html" className="underline">Confidentialité</a>
+          </p>
         </div>
       </div>
     </div>

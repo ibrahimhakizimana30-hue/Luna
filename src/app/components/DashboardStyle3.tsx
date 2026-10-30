@@ -25,7 +25,9 @@ function ServerBalance() {
   );
 }
 
-export function DashboardStyle3() {
+type DashboardTab = 'transactions' | 'messages' | 'calls';
+
+export function DashboardStyle3({ onNavigate }: { onNavigate?: (tab: DashboardTab) => void } = {}) {
   return (
     <div className="space-y-6">
       {/* Solde compact */}
@@ -33,7 +35,7 @@ export function DashboardStyle3() {
 
       {/* Menu d'actions coloré */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <button className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-6 shadow-lg hover:shadow-xl hover:scale-105 transition-all">
+        <button onClick={() => onNavigate?.('transactions')} className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-6 shadow-lg hover:shadow-xl hover:scale-105 transition-all">
           <div className="flex flex-col items-center gap-2">
             <Send className="w-8 h-8" />
             <span className="font-semibold">Envoyer</span>
@@ -41,15 +43,15 @@ export function DashboardStyle3() {
           </div>
         </button>
 
-        <button className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-6 shadow-lg hover:shadow-xl hover:scale-105 transition-all">
+        <button onClick={() => onNavigate?.('messages')} className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-6 shadow-lg hover:shadow-xl hover:scale-105 transition-all">
           <div className="flex flex-col items-center gap-2">
             <MessageCircle className="w-8 h-8" />
             <span className="font-semibold">Messages</span>
-            <span className="text-xs opacity-80">3 nouveaux</span>
+            <span className="text-xs opacity-80">{isBackendEnabled ? 'Discuter' : '3 nouveaux'}</span>
           </div>
         </button>
 
-        <button className="bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-2xl p-6 shadow-lg hover:shadow-xl hover:scale-105 transition-all">
+        <button onClick={() => onNavigate?.('calls')} className="bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-2xl p-6 shadow-lg hover:shadow-xl hover:scale-105 transition-all">
           <div className="flex flex-col items-center gap-2">
             <Video className="w-8 h-8" />
             <span className="font-semibold">Appels</span>
