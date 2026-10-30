@@ -6,6 +6,9 @@ import { TransactionsTab } from './components/TransactionsTab';
 import { MessagesTab } from './components/MessagesTab';
 import { LunaMessages } from './components/LunaMessages';
 import { AdminKyc } from './components/AdminKyc';
+import { LunaSavings } from './components/LunaSavings';
+import { LunaCalls } from './components/LunaCalls';
+import { CallProvider } from './calls/CallProvider';
 import { CallsTab } from './components/CallsTab';
 import { Tutorial } from './components/Tutorial';
 import { NotificationBanner } from './components/NotificationBanner';
@@ -377,6 +380,7 @@ export default function App() {
   }
 
   return (
+    <CallProvider enabled={isBackendEnabled}>
     <div className="size-full bg-gradient-to-br from-violet-50 via-purple-50 to-blue-50 overflow-auto">
       {/* Ruban aux couleurs du drapeau du Congo */}
       <div className="luna-ribbon" />
@@ -495,14 +499,9 @@ export default function App() {
           </div>
 
           <div className="p-6">
-            {isBackendEnabled && ['calls', 'savings'].includes(activeTab) && (
-              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
-                Cette fonction est encore en démonstration : les données affichées sont fictives.
-              </div>
-            )}
             {activeTab === 'home' && <DashboardStyle3 onNavigate={setActiveTab} />}
             {activeTab === 'transactions' && <TransactionsTab />}
-            {activeTab === 'savings' && <SavingsAccount />}
+            {activeTab === 'savings' && (isBackendEnabled ? <LunaSavings /> : <SavingsAccount />)}
             {activeTab === 'messages' && isBackendEnabled && <LunaMessages />}
             {activeTab === 'messages' && !isBackendEnabled && (
               <MessagesTab
@@ -511,7 +510,7 @@ export default function App() {
                 onNewMessage={handleNewMessage}
               />
             )}
-            {activeTab === 'calls' && <CallsTab />}
+            {activeTab === 'calls' && (isBackendEnabled ? <LunaCalls /> : <CallsTab />)}
           </div>
         </div>
 
@@ -526,5 +525,6 @@ export default function App() {
         </div>
       </div>
     </div>
+    </CallProvider>
   );
 }

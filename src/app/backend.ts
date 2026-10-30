@@ -334,3 +334,132 @@ export async function listMobileMoneyPayments(): Promise<MobileMoneyPayment[]> {
   if (error) fail(error);
   return (data as MobileMoneyPayment[]).map((p) => ({ ...p, amount: Number(p.amount) }));
 }
+
+// --- Épargne (avec le solde Luna) -----------------------------------------
+
+export interface SavingsStatus {
+  balance: number;
+  wallet_balance: number;
+  goal_name: string | null;
+  goal_amount: number | null;
+  locked_until: string | null;
+  auto_amount: number | null;
+  auto_day: number | null;
+  month_change: number;
+}
+
+export interface SavingsMovement {
+  id: string;
+  kind: 'deposit' | 'withdraw' | 'auto';
+  amount: number;
+  created_at: string;
+}
+
+export async function getSavings(): Promise<SavingsStatus> {
+  const { data, error } = await client().rpc('savings_status');
+  if (error) fail(error);
+  const d = data as Record<string, unknown>;
+  const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+  return {
+    balance: Number(d.balance),
+    wallet_balance: Number(d.wallet_balance),
+    goal_name: (d.goal_name as string | null) ?? null,
+    goal_amount: num(d.goal_amount),
+    locked_until: (d.locked_until as string | null) ?? null,
+    auto_amount: num(d.auto_amount),
+    auto_day: num(d.auto_day),
+    month_change: Number(d.month_change),
+  };
+}
+
+async function rpcVoid(name: string, args: Record<string, unknown>): Promise<void> {
+  const { error } = await client().rpc(name, args);
+  if (error) fail(error);
+}
+
+export const savingsDeposit = (amount: number) => rpcVoid('savings_deposit', { p_amount: Math.round(amount) });
+export const savingsWithdraw = (amount: number) => rpcVoid('savings_withdraw', { p_amount: Math.round(amount) });
+export const savingsSetGoal = (name: string, amount: number | null) =>
+  rpcVoid('savings_set_goal', { p_name: name, p_amount: amount === null ? null : Math.round(amount) });
+export const savingsLock = (days: number) => rpcVoid('savings_lock', { p_days: days });
+export const savingsSetAuto = (amount: number | null, day: number | null) =>
+  rpcVoid('savings_set_auto', { p_amount: amount === null ? null : Math.round(amount), p_day: day });
+
+export async function getSavingsHistory(): Promise<SavingsMovement[]> {
+  const { data, error } = await client().rpc('savings_history', { p_limit: 30 });
+  if (error) fail(error);
+  return (data as SavingsMovement[]).map((m) => ({ ...m, amount: Number(m.amount) }));
+}
+
+// --- Appels audio / vidéo ---------------------------------------------------
+
+export type CallKind = 'audio' | 'video';
+export type CallStatus = 'ringing' | 'accepted' | 'declined' | 'cancelled' | 'ended' | 'missed';
+
+export interface CallSignal {
+  id: number;
+  kind: 'offer' | 'answer' | 'ice';
+  payload: Record<string, unknown>;
+}
+
+export interface IncomingCall {
+  id: string;
+  contact: string;
+  kind: CallKind;
+  created_at: string;
+}
+
+export interface CallRecord {
+  id: string;
+  contact: string;
+  kind: CallKind;
+  outgoing: boolean;
+  status: CallStatus;
+  created_at: string;
+  duration_seconds: number | null;
+}
+
+export async function startCall(contact: string, kind: CallKind): Promise<string> {
+  const { data, error } = await client().rpc('start_call', {
+    p_contact: normalizeContact(contact),
+    p_kind: kind,
+  });
+  if (error) fail(error);
+  return data as string;
+}
+
+export const answerCall = (callId: string, accept: boolean) =>
+  rpcVoid('answer_call', { p_call_id: callId, p_accept: accept });
+export const endCall = (callId: string) => rpcVoid('end_call', { p_call_id: callId });
+export const sendCallSignal = (callId: string, kind: CallSignal['kind'], payload: unknown) =>
+  rpcVoid('send_call_signal', { p_call_id: callId, p_kind: kind, p_payload: payload });
+
+export async function pollCall(callId: string, after: number): Promise<{ status: CallStatus; signals: CallSignal[] }> {
+  const { data, error } = await client().rpc('call_poll', { p_call_id: callId, p_after: after });
+  if (error) fail(error);
+  const d = data as { status: CallStatus; signals: CallSignal[] };
+  return { status: d.status, signals: (d.signals ?? []).map((s) => ({ ...s, id: Number(s.id) })) };
+}
+
+export async function getIncomingCall(): Promise<IncomingCall | null> {
+  const { data, error } = await client().rpc('incoming_call');
+  if (error) return null;
+  return (data as IncomingCall[])[0] ?? null;
+}
+
+export async function listCalls(): Promise<CallRecord[]> {
+  const { data, error } = await client().rpc('my_calls', { p_limit: 30 });
+  if (error) fail(error);
+  return data as CallRecord[];
+}
+
+// Prévient dès qu'un appel vous concernant change (en direct)
+export function onCallsChanged(callback: () => void): () => void {
+  const channel = client()
+    .channel(`calls-${Math.random().toString(36).slice(2)}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'calls' }, () => callback())
+    .subscribe();
+  return () => {
+    void client().removeChannel(channel);
+  };
+}
