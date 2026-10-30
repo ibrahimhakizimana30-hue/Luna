@@ -300,3 +300,37 @@ export function onMessagesChanged(callback: () => void): () => void {
     void client().removeChannel(channel);
   };
 }
+
+// --- Paiements directs Mobile Money (déclarés, non vérifiés) --------------
+
+export type MobileOperator = 'mtn' | 'airtel';
+
+export interface MobileMoneyPayment {
+  id: string;
+  operator: MobileOperator;
+  recipient_phone: string;
+  amount: number;
+  note: string | null;
+  created_at: string;
+}
+
+export async function declareMobileMoneyPayment(
+  operator: MobileOperator,
+  recipientPhone: string,
+  amount: number,
+  note: string,
+): Promise<void> {
+  const { error } = await client().rpc('declare_mobile_money_payment', {
+    p_operator: operator,
+    p_recipient_phone: normalizePhone(recipientPhone),
+    p_amount: Math.round(amount),
+    p_note: note.trim() || null,
+  });
+  if (error) fail(error);
+}
+
+export async function listMobileMoneyPayments(): Promise<MobileMoneyPayment[]> {
+  const { data, error } = await client().rpc('my_mobile_money_payments', { p_limit: 50 });
+  if (error) fail(error);
+  return (data as MobileMoneyPayment[]).map((p) => ({ ...p, amount: Number(p.amount) }));
+}
