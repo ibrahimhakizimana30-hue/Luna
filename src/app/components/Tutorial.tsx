@@ -59,8 +59,8 @@ export function Tutorial({ onClose }: TutorialProps) {
   const Icon = step.icon;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <div className="my-auto bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
         <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 text-white p-6">
           <button
             onClick={onClose}

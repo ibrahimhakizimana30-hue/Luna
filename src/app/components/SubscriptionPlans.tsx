@@ -75,7 +75,7 @@ export function SubscriptionPlans({ onSelectPlan }: { onSelectPlan: (planId: str
   ];
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-start justify-center z-50 p-4 overflow-y-auto">
       <div className="max-w-6xl w-full my-8">
         <div className="text-center mb-8 text-white">
           <h2 className="text-4xl font-bold mb-4">Choisissez votre plan Luna 🌙</h2>

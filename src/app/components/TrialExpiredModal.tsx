@@ -3,8 +3,8 @@ import { AlertCircle, Lock } from 'lucide-react';
 export function TrialExpiredModal({ onVerify, kycPending = false }: { onVerify: () => void; kycPending?: boolean }) {
   if (kycPending) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+      <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+        <div className="my-auto bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
           <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Lock className="w-10 h-10 text-blue-600" />
           </div>
@@ -19,8 +19,8 @@ export function TrialExpiredModal({ onVerify, kycPending = false }: { onVerify: 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+    <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <div className="my-auto bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
         <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <Lock className="w-10 h-10 text-red-600" />
         </div>
