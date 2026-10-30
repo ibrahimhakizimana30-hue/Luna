@@ -200,3 +200,15 @@ VITE_TURN_CREDENTIAL=…
 Chaque jour à 7 h UTC (8 h à Brazzaville), la tâche planifiée
 `luna-epargne-auto` (pg_cron) verse l'épargne automatique des personnes dont
 c'est le jour choisi. Si le solde est insuffisant, le versement est sauté.
+
+## Notifications (Web Push)
+
+- La cloche 🔔 de l'en-tête active les notifications sur le téléphone et règle
+  les catégories (messages, appels, argent reçu, vérification d'identité, aperçu).
+- Les événements de la base appellent `private.notify()`, qui appelle la
+  fonction Edge `send-push` (dossier `supabase/functions/send-push`).
+- Les clés sont dans le coffre-fort Vault de Supabase : `luna_push_secret`,
+  `luna_vapid_public`, `luna_vapid_private`. La clé publique est aussi dans
+  `.env.production` (`VITE_VAPID_PUBLIC_KEY`).
+- Sur iPhone, les notifications ne marchent que si Luna est ajouté à l'écran
+  d'accueil (iOS 16.4 ou plus récent).

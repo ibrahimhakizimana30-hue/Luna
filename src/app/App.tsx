@@ -9,6 +9,8 @@ import { AdminKyc } from './components/AdminKyc';
 import { LunaSavings } from './components/LunaSavings';
 import { LunaCalls } from './components/LunaCalls';
 import { CallProvider } from './calls/CallProvider';
+import { NotificationSettingsPanel } from './components/NotificationSettingsPanel';
+import { getPushState, refreshPushSubscription } from './notifications/push';
 import { CallsTab } from './components/CallsTab';
 import { Tutorial } from './components/Tutorial';
 import { NotificationBanner } from './components/NotificationBanner';
@@ -21,7 +23,7 @@ import { PinLogin } from './components/PinLogin';
 import { SignupLogin } from './components/SignupLogin';
 import { FreeTrialBanner } from './components/FreeTrialBanner';
 import { TrialExpiredModal } from './components/TrialExpiredModal';
-import { Wallet, MessageCircle, Video, Home, PiggyBank, LogOut, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Wallet, MessageCircle, Video, Home, PiggyBank, LogOut, AlertCircle, ShieldCheck, Bell, X } from 'lucide-react';
 import { hasPin, migrateLegacyPin, savePin } from './security/pin';
 import { getBiometricCredentialId } from './security/biometric';
 import {
@@ -45,6 +47,19 @@ function trialDaysLeft(start: Date): number {
 }
 
 type Tab = 'home' | 'transactions' | 'messages' | 'calls' | 'savings';
+const TABS: Tab[] = ['home', 'transactions', 'messages', 'calls', 'savings'];
+
+// Onglet demandé par une notification (ex. « /?tab=messages »)
+function tabFromUrl(url: string): Tab | null {
+  try {
+    const tab = new URL(url, window.location.origin).searchParams.get('tab');
+    return TABS.includes(tab as Tab) ? (tab as Tab) : null;
+  } catch {
+    return null;
+  }
+}
+
+const NOTIF_PROMPT_KEY = 'luna_notif_prompt_dismissed';
 
 interface Notification {
   id: string;
@@ -63,7 +78,7 @@ interface Message {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('home');
+  const [activeTab, setActiveTab] = useState<Tab>(() => tabFromUrl(window.location.href) ?? 'home');
   const [showTutorial, setShowTutorial] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [selectedContact, setSelectedContact] = useState<string | null>('Marie Dubois');
@@ -84,6 +99,42 @@ export default function App() {
   const [loadError, setLoadError] = useState('');
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showNotifPrompt, setShowNotifPrompt] = useState(false);
+
+  // Retire « ?tab=… » de l'adresse, et suit les notifications touchées quand Luna est déjà ouvert
+  useEffect(() => {
+    if (tabFromUrl(window.location.href)) window.history.replaceState(null, '', '/');
+    const onMessage = (e: MessageEvent) => {
+      if (e.data?.type !== 'luna-open') return;
+      const tab = tabFromUrl(e.data.url);
+      if (tab) setActiveTab(tab);
+    };
+    navigator.serviceWorker?.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker?.removeEventListener('message', onMessage);
+  }, []);
+
+  // Une fois connecté : met à jour l'abonnement et propose d'activer les notifications
+  useEffect(() => {
+    if (!isBackendEnabled || !isAuthenticated) return;
+    void refreshPushSubscription();
+    let dismissed = false;
+    try {
+      dismissed = localStorage.getItem(NOTIF_PROMPT_KEY) === 'true';
+    } catch {
+      // stockage indisponible : on propose quand même
+    }
+    if (!dismissed) void getPushState().then((state) => setShowNotifPrompt(state === 'off' || state === 'ios-install'));
+  }, [isAuthenticated]);
+
+  const dismissNotifPrompt = () => {
+    setShowNotifPrompt(false);
+    try {
+      localStorage.setItem(NOTIF_PROMPT_KEY, 'true');
+    } catch {
+      // stockage indisponible
+    }
+  };
 
   // Période d'essai
   const [trialStartDate, setTrialStartDate] = useState<Date | null>(null);
@@ -385,6 +436,14 @@ export default function App() {
       {/* Ruban aux couleurs du drapeau du Congo */}
       <div className="luna-ribbon" />
       {showAdmin && <AdminKyc onClose={() => setShowAdmin(false)} />}
+      {showNotifications && (
+        <NotificationSettingsPanel
+          onClose={() => {
+            setShowNotifications(false);
+            void getPushState().then((state) => state === 'on' && setShowNotifPrompt(false));
+          }}
+        />
+      )}
       {showTutorial && <Tutorial onClose={handleCloseTutorial} />}
       {showTrialExpired && <TrialExpiredModal onVerify={handleStartKYC} kycPending={kycStatus === 'pending'} />}
 
@@ -413,6 +472,16 @@ export default function App() {
           </div>
           <div className="flex items-center gap-2">
             <OfflineIndicator />
+            {isBackendEnabled && (
+              <button
+                onClick={() => setShowNotifications(true)}
+                title="Notifications"
+                aria-label="Notifications"
+                className="p-2 rounded-full text-purple-700 hover:bg-purple-100 transition-colors"
+              >
+                <Bell className="w-5 h-5" />
+              </button>
+            )}
             {isAdminUser && (
               <button
                 onClick={() => setShowAdmin(true)}
@@ -437,6 +506,27 @@ export default function App() {
         </div>
 
         {!isBackendEnabled && <SyncQueue />}
+
+        {showNotifPrompt && (
+          <div className="bg-white border-2 border-purple-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+            <Bell className="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-purple-900">Ne manquez rien</p>
+              <p className="text-sm text-gray-600">
+                Soyez prévenu des messages, des appels et de l'argent reçu, même quand Luna est fermé.
+              </p>
+              <button
+                onClick={() => setShowNotifications(true)}
+                className="mt-2 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold"
+              >
+                Activer les notifications
+              </button>
+            </div>
+            <button onClick={dismissNotifPrompt} aria-label="Ne plus proposer" className="p-1 text-gray-500 hover:text-gray-700">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
 
         <div className="bg-white rounded-xl shadow-lg border border-purple-200 overflow-hidden">
           <div className="luna-ribbon" />
